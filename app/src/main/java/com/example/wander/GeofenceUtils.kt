@@ -15,7 +15,7 @@ internal object GeofencingConstants {
             "Scotiabank",
             "Hey! 20% Percent discount on the Starbucks Coffee",
             LatLng(4.710216, -74.062312)
-        )/*,
+        ),
 
         LandmarkDataObject(
             "promo_fence_2",
@@ -42,7 +42,7 @@ internal object GeofencingConstants {
             "U.S. Bancorp",
             "Hey! This is a temporal coupon for your next buy in Walmart that is near by you",
             LatLng(4.711357, -74.064588)
-        )*/
+        )
     )
 
     val NUM_LANDMARKS = LANDMARK_DATA.size
