@@ -20,8 +20,6 @@ class Network  {
     private var client: OkHttpClient
     private var moshi: Moshi
     private var retrofit: Retrofit
-    private val _networkCurrentState=MutableLiveData<NetworkState>()
-    val networkCurrentState: LiveData<NetworkState> get() = _networkCurrentState
 
     enum class NetworkState {
         SUCCESS,
@@ -80,10 +78,13 @@ class Network  {
     companion object {
         @Volatile
         private var INSTANCE: Network? = null
+        private lateinit var _networkCurrentState:MutableLiveData<NetworkState>
+        val networkCurrentState: LiveData<NetworkState> get() = _networkCurrentState
 
         fun getNetworkProvider(): Network {
 
             return INSTANCE ?: synchronized(this) {
+                _networkCurrentState=MutableLiveData<NetworkState>()
                 Network()
             }
         }

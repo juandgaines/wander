@@ -24,12 +24,19 @@ class SignInFragment : Fragment() {
     ): View? {
         binding =
             DataBindingUtil.inflate(inflater, R.layout.sign_in_fragment, container, false)
+
         return binding.root
     }
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
         viewModel = ViewModelProvider(this).get(SignInViewModel::class.java)
+
+        mapsActivity = requireActivity() as MapsActivity
+
+        binding.goSignIn.setOnClickListener {
+            mapsActivity.navController.navigate(R.id.action_signInFragment_to_mapFragment)
+        }
     }
 
 }

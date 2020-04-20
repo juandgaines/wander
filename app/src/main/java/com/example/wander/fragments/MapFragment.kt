@@ -284,36 +284,11 @@ class MapFragment : Fragment(), OnMapReadyCallback {
         geofencingClient.removeGeofences(geofencePendingIntent)?.run {
             // Regardless of success/failure of the removal, add the new geofence
             addOnCompleteListener {
-                // Add the new geofence request with the new geofence
-                geofencingClient.addGeofences(
-                    viewModel.geofenceRequest.value,
-                    geofencePendingIntent
-                )?.run {
-                    addOnSuccessListener {
-                        // Geofences added.
-                        Toast.makeText(
-                            requireContext(), R.string.geofences_added,
-                            Toast.LENGTH_SHORT
-                        )
-                            .show()
-                        Log.e(
-                            "Add Geofence",
-                            viewModel.geofenceRequest.value?.geofences?.first()?.requestId ?: ""
-                        )
-                        // Tell the viewmodel that we've reached the end of the game and
-                        // activated the last "geofence" --- by removing the Geofence.
-                    }
-                    addOnFailureListener {
-                        // Failed to add geofences.
-                        Toast.makeText(
-                            mapsActivity, R.string.geofences_not_added,
-                            Toast.LENGTH_SHORT
-                        ).show()
-                        if ((it.message != null)) {
-                            Log.w(TAG, it.message)
-                        }
-                    }
-                }
+                Toast.makeText(
+                    mapsActivity, R.string.geofences_removed,
+                    Toast.LENGTH_SHORT
+                ).show()
+
             }
         }
     }

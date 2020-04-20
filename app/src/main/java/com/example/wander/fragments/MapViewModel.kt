@@ -23,7 +23,7 @@ class MapViewModel : ViewModel() {
     val location: LiveData<Location> get() = _location
     val geofenceRequest: LiveData<GeofencingRequest> get() = _geofenceRequest
 
-    val networkState:LiveData<Network.NetworkState> get() =pro.networkCurrentState
+    val networkState:LiveData<Network.NetworkState> get() =Network.networkCurrentState
 
     val errorMessage:LiveData<String> get() = _errorMessage
 

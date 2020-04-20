@@ -24,4 +24,5 @@
     <string name="first_name">First Name</string>
     <string name="last_name">Last name</string>
     <string name="register">Register</string>
+    <string name="geofences_removed">Geofences removed</string>
 </resources>
