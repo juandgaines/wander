@@ -1,5 +1,10 @@
-package com.example.wander.network/*
+package com.example.wander.network
 
+import android.os.Handler
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
+import com.example.wander.GeofencingConstants.LANDMARK_DATA
+import com.example.wander.LandmarkDataObject
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import kotlinx.coroutines.CoroutineScope
@@ -15,6 +20,14 @@ class Network  {
     private var client: OkHttpClient
     private var moshi: Moshi
     private var retrofit: Retrofit
+    private val _networkCurrentState=MutableLiveData<NetworkState>()
+    val networkCurrentState: LiveData<NetworkState> get() = _networkCurrentState
+
+    enum class NetworkState {
+        SUCCESS,
+        LOADING,
+        ERROR
+    }
 
 
     init {
@@ -30,65 +43,39 @@ class Network  {
             .build()
     }
 
-    val lastFm = retrofit.create(LastFmService::class.java)
+    val lasrkyNudgeService = retrofit.create(LasrkyNudgeService::class.java)
 
 
-    suspend fun searchTracks(
-        page: Int,
-        onSuccess: (tracks: List<Track>) -> Unit,
-        onError: (error: String) -> Unit
+    suspend fun registerUser(
+        user: User,
+        onSuccess: () -> Unit={},
+        onError: (String) -> Unit={}
     ) {
         try {
-            val playList = lastFm.getTracksList("spain", page).tracks
-            onSuccess(playList.track)
+            _networkCurrentState.value=NetworkState.LOADING
+            val playList = lasrkyNudgeService.registerUser(user)
+            onSuccess()
+            _networkCurrentState.value=NetworkState.SUCCESS
         } catch (e: Throwable) {
             onError(e.message.toString())
-            Timber.tag(LastFmRepo::class.java.simpleName).e("$e")
+            _networkCurrentState.value=NetworkState.ERROR
         }
     }
 
-    suspend fun searchArtists(
-        page: Int,
-        onSuccess: (artists: List<Artist2>) -> Unit,
-        onError: (error: String) -> Unit
+    fun getPromotionsAround(
+        onSuccess: (Array<LandmarkDataObject>) -> Unit,
+        onError: (String) -> Unit
     ) {
-        try {
-            val playList = lastFm.getArtistList("spain", page).topartists
-            onSuccess(playList.artist)
-        } catch (e: Throwable) {
-            onError(e.message.toString())
-            Timber.tag(LastFmRepo::class.java.simpleName).e("$e")
-        }
+
+        _networkCurrentState.value=NetworkState.LOADING
+        Handler().postDelayed({
+            onSuccess(LANDMARK_DATA)
+            _networkCurrentState.value=NetworkState.SUCCESS
+
+        },5000)
+
     }
 
-    override fun insertTracks(posts: List<Track>) = Unit
-
-    override fun getAllTracks(query: String): DataSource.Factory<Int, Track>? = null
-
-    override fun insertArtist(posts: List<Artist2>) = Unit
-
-    override fun getAllArtist(query: String): DataSource.Factory<Int, Artist2>? = null
-
-    override fun deleteAllArtists() = Unit
-
-    override fun deleteAllTracks() = Unit
-    override suspend fun searchArtistsByQuery(
-        page: Int,
-        onSuccess: (artists: List<Artist2>) -> Unit,
-        onError: (error: String) -> Unit
-    ) {
-        searchArtists(page, onSuccess, onError)
-    }
-
-    override suspend fun searchTrackByQuery(
-        page: Int,
-        onSuccess: (artists: List<Track>) -> Unit,
-        onError: (error: String) -> Unit
-    ) {
-        searchTracks(page, onSuccess, onError)
-    }
-
-    override fun setCoroutine(coroutineScope: CoroutineScope) = Unit
 
     companion object {
         @Volatile
@@ -103,5 +90,5 @@ class Network  {
 
     }
 
-}*/
+}
 

@@ -1,21 +1,19 @@
 package com.example.wander.fragments
 
-import android.Manifest
-import android.annotation.TargetApi
 import android.app.Activity.RESULT_OK
 import android.app.PendingIntent
 import android.content.Intent
-import android.content.IntentSender
 import android.content.pm.PackageManager
 import android.content.res.Resources
 import android.graphics.Color
 import android.location.Location
 import android.os.Bundle
+import android.os.Handler
 import android.util.Log
 import android.view.*
+import android.view.View.GONE
+import android.view.View.VISIBLE
 import android.widget.Toast
-import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
 import androidx.databinding.DataBindingUtil
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Observer
@@ -23,7 +21,6 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.findNavController
 import androidx.navigation.ui.NavigationUI
 import com.example.wander.*
-import com.example.wander.R
 import com.example.wander.Utils.Companion.BACKGROUND_LOCATION_PERMISSION_INDEX
 import com.example.wander.Utils.Companion.LOCATION_PERMISSION_INDEX
 import com.example.wander.Utils.Companion.REQUEST_FOREGROUND_AND_BACKGROUND_PERMISSION_RESULT_CODE
@@ -33,8 +30,10 @@ import com.example.wander.Utils.Companion.foregroundAndBackgroundLocationPermiss
 import com.example.wander.Utils.Companion.isPermissionGranted
 import com.example.wander.Utils.Companion.requestForegroundAndBackgroundLocationPermissions
 import com.example.wander.databinding.MapFragmentBinding
-import com.google.android.gms.common.api.ResolvableApiException
-import com.google.android.gms.location.*
+import com.example.wander.network.Network
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.GeofencingClient
+import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
@@ -45,7 +44,7 @@ import com.google.maps.android.heatmaps.HeatmapTileProvider
 @Suppress("DEPRECATED_IDENTITY_EQUALS")
 class MapFragment : Fragment(), OnMapReadyCallback {
 
-    private val TAG = MapsActivity::class.java.simpleName
+    private val TAG = MapFragment::class.java.simpleName
     private lateinit var viewModel: MapViewModel
     private lateinit var binding: MapFragmentBinding
     private lateinit var map: GoogleMap
@@ -54,6 +53,8 @@ class MapFragment : Fragment(), OnMapReadyCallback {
 
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private var currentLocation: LatLng? = null
+
+    private lateinit var mapsActivity: MapsActivity
 
 
     private val runningQOrLater =
@@ -92,7 +93,7 @@ class MapFragment : Fragment(), OnMapReadyCallback {
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
         viewModel = ViewModelProvider(this).get(MapViewModel::class.java)
-
+        mapsActivity = requireActivity() as MapsActivity
         activity?.let {
             geofencingClient = LocationServices.getGeofencingClient(it)
             createChannel(it.applicationContext)
@@ -100,21 +101,34 @@ class MapFragment : Fragment(), OnMapReadyCallback {
 
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireActivity())
 
-        viewModel.location.observe(viewLifecycleOwner, Observer {loc->
-            loc?.let {
-                currentLocation= LatLng(it.latitude,it.longitude)
-                focusMapOnCoordinates()
-            }
+        viewModel.location.observe(viewLifecycleOwner, Observer { loc ->
+            currentLocation = LatLng(loc.latitude, loc.longitude)
+            focusMapOnCoordinates()
         })
 
-        viewModel.geofenceRequest.observe(viewLifecycleOwner, Observer {geofencingRequest->
-            geofencingRequest?.let {gr->
+        viewModel.geofenceRequest.observe(viewLifecycleOwner, Observer { geofencingRequest ->
+            geofencingRequest?.let { gr ->
                 geofencingClient.addGeofences(gr, geofencePendingIntent)?.run {
                     addOnSuccessListener {
                         Log.d("Add Geofence", gr.geofences.first().requestId)
                     }
                 }
             }
+        })
+
+        viewModel.networkState.observe(viewLifecycleOwner, Observer {
+            when (it) {
+                Network.NetworkState.SUCCESS,
+                Network.NetworkState.ERROR -> {
+                    binding.loadingView.visibility=GONE
+                }
+                else -> {
+                    binding.loadingView.visibility= VISIBLE
+                }
+            }
+        })
+        viewModel.errorMessage.observe(viewLifecycleOwner, Observer {
+            Toast.makeText(requireContext(), it, Toast.LENGTH_SHORT).show()
         })
     }
 
@@ -124,22 +138,14 @@ class MapFragment : Fragment(), OnMapReadyCallback {
     }
 
     private fun checkPermissionsAndStartGeofencing() {
-        if (foregroundAndBackgroundLocationPermissionApproved(requireContext(),runningQOrLater)) {
-            checkDeviceLocationSettingsAndStartGeofence(true,this,onSuccess =  {
-                viewModel.addGeofence()
-            },onError = {
-                startIntentSenderForResult(
-                    it.resolution.intentSender,
-                    REQUEST_TURN_DEVICE_LOCATION_ON,
-                    null,
-                    0,
-                    0,
-                    0,
-                    null
-                )
-            })
+        if (foregroundAndBackgroundLocationPermissionApproved(requireContext(), runningQOrLater)) {
+            checkLocationSolver()
         } else {
-            requestForegroundAndBackgroundLocationPermissions(requireContext(),runningQOrLater,this)
+            requestForegroundAndBackgroundLocationPermissions(
+                requireContext(),
+                runningQOrLater,
+                this
+            )
         }
     }
 
@@ -154,8 +160,11 @@ class MapFragment : Fragment(), OnMapReadyCallback {
 
     private fun focusMapOnCoordinates() {
         val zoomLevel = 18f
-        map.moveCamera(CameraUpdateFactory.newLatLngZoom(currentLocation, zoomLevel))
-        map.isMyLocationEnabled = true
+        Handler().postDelayed({
+            map.moveCamera(CameraUpdateFactory.newLatLngZoom(currentLocation, zoomLevel))
+            map.isMyLocationEnabled = true
+            binding.map.onResume()
+        }, 300)
     }
 
     fun enableMyLocation() {
@@ -168,41 +177,46 @@ class MapFragment : Fragment(), OnMapReadyCallback {
         }
     }
 
-
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<String>,
+        grantResults: IntArray
+    ) {
         Log.d(TAG, "onRequestPermissionResult")
 
         if (grantResults.isEmpty() || grantResults[LOCATION_PERMISSION_INDEX] == PackageManager.PERMISSION_DENIED || (requestCode == REQUEST_FOREGROUND_AND_BACKGROUND_PERMISSION_RESULT_CODE && grantResults[BACKGROUND_LOCATION_PERMISSION_INDEX] == PackageManager.PERMISSION_DENIED)) {
             // Permission denied.
             Log.d(TAG, "Permission denied")
-            activity?.findNavController(R.id.nav_controller)?.navigateUp()
-
+            mapsActivity.navController.navigateUp()
         } else {
-            checkDeviceLocationSettingsAndStartGeofence(true,this,onSuccess =  {
-                viewModel.addGeofence()
-            },onError = {
-                startIntentSenderForResult(
-                    it.resolution.intentSender,
-                    REQUEST_TURN_DEVICE_LOCATION_ON,
-                    null,
-                    0,
-                    0,
-                    0,
-                    null
-                )
-            })
+            checkLocationSolver()
         }
+    }
+
+    private fun checkLocationSolver() {
+        checkDeviceLocationSettingsAndStartGeofence(true, this, onSuccess = {
+            viewModel.getPromotionsAround(currentLocation)
+        }, onError = {
+            startIntentSenderForResult(
+                it.resolution.intentSender,
+                REQUEST_TURN_DEVICE_LOCATION_ON,
+                null,
+                0,
+                0,
+                0,
+                null
+            )
+        })
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-
-        if(resultCode==RESULT_OK){
-            when(requestCode){
-                REQUEST_TURN_DEVICE_LOCATION_ON->{
+        if (resultCode == RESULT_OK) {
+            when (requestCode) {
+                REQUEST_TURN_DEVICE_LOCATION_ON -> {
                     enableMyLocation()
                 }
-                else->Unit
+                else -> Unit
             }
         }
 
@@ -271,7 +285,10 @@ class MapFragment : Fragment(), OnMapReadyCallback {
             // Regardless of success/failure of the removal, add the new geofence
             addOnCompleteListener {
                 // Add the new geofence request with the new geofence
-                geofencingClient.addGeofences(viewModel.geofenceRequest.value, geofencePendingIntent)?.run {
+                geofencingClient.addGeofences(
+                    viewModel.geofenceRequest.value,
+                    geofencePendingIntent
+                )?.run {
                     addOnSuccessListener {
                         // Geofences added.
                         Toast.makeText(
@@ -279,14 +296,17 @@ class MapFragment : Fragment(), OnMapReadyCallback {
                             Toast.LENGTH_SHORT
                         )
                             .show()
-                        Log.e("Add Geofence", viewModel.geofenceRequest.value?.geofences?.first()?.requestId?:"")
+                        Log.e(
+                            "Add Geofence",
+                            viewModel.geofenceRequest.value?.geofences?.first()?.requestId ?: ""
+                        )
                         // Tell the viewmodel that we've reached the end of the game and
                         // activated the last "geofence" --- by removing the Geofence.
                     }
                     addOnFailureListener {
                         // Failed to add geofences.
                         Toast.makeText(
-                            requireContext(), R.string.geofences_not_added,
+                            mapsActivity, R.string.geofences_not_added,
                             Toast.LENGTH_SHORT
                         ).show()
                         if ((it.message != null)) {
@@ -316,7 +336,7 @@ class MapFragment : Fragment(), OnMapReadyCallback {
             }
             else -> NavigationUI.onNavDestinationSelected(
                 item!!,
-                requireActivity().findNavController(R.id.nav_controller)
+                requireActivity().findNavController(R.id.myNavHostFragment)
             )
                     || super.onOptionsItemSelected(item)
         }
