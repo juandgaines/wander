@@ -5,12 +5,11 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MediatorLiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
-import com.example.wander.network.Network
-import com.example.wander.network.Result
-import com.example.wander.network.User
+import com.example.wander.network.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
 
 class SignInViewModel : ViewModel() {
 
@@ -20,12 +19,12 @@ class SignInViewModel : ViewModel() {
     private val _email = MutableLiveData<String>()
     private val _password = MutableLiveData<String>()
 
-    private val _response = MutableLiveData<Result<User>>()
+    private val _response = MutableLiveData<Result<Token>>()
     private val _buttonEnabled = MediatorLiveData<Boolean>()
 
 
     val network = Network.getNetworkProvider()
-    val response: LiveData<Result<User>> get() = _response
+    val response: LiveData<Result<Token>> get() = _response
     val buttonEnabled: LiveData<Boolean> get() = _buttonEnabled
 
     init{
@@ -58,8 +57,20 @@ class SignInViewModel : ViewModel() {
 
     }
 
-    fun login(){
+    fun login() {
 
+        val user = Login(
+            email = _email.value ?: "",
+            password = _password.value ?: ""
+        )
+
+        couroutineScope.launch {
+            network.loginUser(user,onSuccess = {
+                _response.postValue(Result.Success(it))
+            },onError = {
+                _response.postValue(Result.Error(it))
+            })
+        }
 
     }
 }

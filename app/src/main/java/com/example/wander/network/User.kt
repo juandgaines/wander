@@ -15,3 +15,12 @@ data class User(
 )
 
 data class DataResponse(val code: Long)
+
+data class Login(
+    val email: String,
+    val password: String
+)
+
+data class Token(
+    val key: String
+)

@@ -13,4 +13,9 @@ interface LasrkyNudgeService {
         @Body user: User
     ): User
 
+    @POST("rest-auth/login/")
+    suspend fun loginUser(
+        @Body login: Login
+    ): Token
+
 }

@@ -38,7 +38,6 @@ class SignInFragment : Fragment() {
         binding.lifecycleOwner=this
         binding.viewModel=viewModel
 
-
         // mapsActivity.navController.navigate(R.id.action_signInFragment_to_mapFragment)
 
     }

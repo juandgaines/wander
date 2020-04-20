@@ -63,6 +63,26 @@ class Network {
         }
     }
 
+
+    suspend fun loginUser(
+        login: Login,
+        onSuccess: (Token) -> Unit = {},
+        onError: (String) -> Unit = {}
+    ) {
+
+        _networkCurrentState.postValue(NetworkState.LOADING)
+        var token: Token?
+        try {
+            token = lasrkyNudgeService.loginUser(login)
+            onSuccess(token)
+            _networkCurrentState.postValue(NetworkState.SUCCESS)
+
+        } catch (e: Throwable) {
+            onError(e.message.toString())
+            _networkCurrentState.postValue( NetworkState.ERROR)
+        }
+    }
+
     fun getPromotionsAround(
         onSuccess: (Array<LandmarkDataObject>) -> Unit,
         onError: (String) -> Unit
