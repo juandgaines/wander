@@ -44,6 +44,18 @@ class SignInViewModel : ViewModel() {
         }
     }
 
+    fun onTextChangedEmail(
+        s: CharSequence
+    ) {
+        _email.value = s.toString()
+    }
+
+    fun onTextChangedPw(
+        s: CharSequence
+    ) {
+        _password.value = s.toString()
+    }
+
     private fun validateButton(
         _email: MutableLiveData<String>,
         _password: MutableLiveData<String>
