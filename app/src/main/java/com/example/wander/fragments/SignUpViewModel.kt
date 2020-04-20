@@ -5,22 +5,34 @@ import androidx.lifecycle.MediatorLiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.example.wander.network.Network
+import com.example.wander.network.Result
+import com.example.wander.network.User
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
 
 class SignUpViewModel : ViewModel() {
 
-    val _username = MutableLiveData<String>()
-    val _firstName = MutableLiveData<String>()
-    val _lastName = MutableLiveData<String>()
-    val _email = MutableLiveData<String>()
-    val _password = MutableLiveData<String>()
-    val _passConfirm = MutableLiveData<String>()
+    private var viewModelJob: Job = Job()
+    private var couroutineScope = CoroutineScope(viewModelJob + Dispatchers.IO)
+
+    private val _username = MutableLiveData<String>()
+    private val _firstName = MutableLiveData<String>()
+    private val _lastName = MutableLiveData<String>()
+    private val _email = MutableLiveData<String>()
+    private val _password = MutableLiveData<String>()
+    private val _passConfirm = MutableLiveData<String>()
+    private val _response = MutableLiveData<Result<User>>()
 
     val buttonEnabled = MediatorLiveData<Boolean>()
+    private val _errorMessage = MutableLiveData<String>()
+    val network = Network.getNetworkProvider()
 
-    val _errorMessage=MutableLiveData<String>()
-    val network=Network.getNetworkProvider()
-    val networkState: LiveData<Network.NetworkState> get() =Network.networkCurrentState
+    val networkState: LiveData<Network.NetworkState> get() = Network.networkCurrentState
     val errorMessage: LiveData<String> get() = _errorMessage
+    val response:LiveData<Result<User>> get() = _response
+
 
     init {
 
@@ -75,36 +87,37 @@ class SignUpViewModel : ViewModel() {
     fun onTextChangedUserName(
         s: CharSequence
     ) {
-        _username.value=s.toString()
+        _username.value = s.toString()
     }
 
     fun onTextChangedFirstName(
         s: CharSequence
     ) {
-        _firstName.value=s.toString()
+        _firstName.value = s.toString()
     }
 
     fun onTextChangedLastName(
         s: CharSequence
     ) {
-        _lastName.value=s.toString()
+        _lastName.value = s.toString()
     }
 
     fun onTextChangedEmail(
         s: CharSequence
     ) {
-        _email.value=s.toString()
+        _email.value = s.toString()
     }
 
     fun onTextChangedPw(
         s: CharSequence
     ) {
-        _password.value=s.toString()
+        _password.value = s.toString()
     }
+
     fun onTextChangedPwConfirm(
         s: CharSequence
     ) {
-        _passConfirm.value=s.toString()
+        _passConfirm.value = s.toString()
     }
 
     private fun validateButton(
@@ -129,8 +142,32 @@ class SignUpViewModel : ViewModel() {
                 (em.isNotBlank() && em.isNotEmpty()) &&
                 (p1.isNotBlank() && p1.isNotEmpty()) &&
                 (p2.isNotBlank() && p2.isNotEmpty()) &&
-                (p2==p1)
+                (p2 == p1)
 
     }
 
+    fun registerUser() {
+
+        val user = User(
+            username = _username.value ?: "",
+            firstName = _firstName.value ?: "",
+            lastName = _lastName.value ?: "",
+            email = _email.value ?: "",
+            password = _password.value ?: ""
+        )
+
+        couroutineScope.launch {
+            network.registerUser(user,onSuccess = {
+                _response.postValue(Result.Success(it))
+            },onError = {
+                _response.postValue(Result.Error(it))
+            })
+        }
+
+    }
+
+override fun onCleared() {
+    super.onCleared()
+    viewModelJob.cancel()
+}
 }

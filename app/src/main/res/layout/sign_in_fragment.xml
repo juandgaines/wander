@@ -5,6 +5,9 @@
 
     <data>
 
+        <variable
+            name="viewModel"
+            type="com.example.wander.fragments.SignInViewModel" />
     </data>
 
     <androidx.constraintlayout.widget.ConstraintLayout
@@ -60,6 +63,8 @@
             android:layout_marginTop="16dp"
             android:background="@drawable/button_style_one"
             android:text="@string/sign_in"
+            android:enabled="@{viewModel.buttonEnabled}"
+            android:onClick="@{()->viewModel.login()}"
             android:textColor="@android:color/white"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"

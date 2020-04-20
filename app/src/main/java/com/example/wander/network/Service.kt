@@ -7,14 +7,13 @@ import com.example.wander.GeofencingConstants.LANDMARK_DATA
 import com.example.wander.LandmarkDataObject
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
-import kotlinx.coroutines.CoroutineScope
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 
 
-class Network  {
+class Network {
 
     private var logger: HttpLoggingInterceptor = HttpLoggingInterceptor()
     private var client: OkHttpClient
@@ -29,7 +28,7 @@ class Network  {
 
 
     init {
-        logger.level = HttpLoggingInterceptor.Level.BASIC
+        logger.level = HttpLoggingInterceptor.Level.BODY
         client = OkHttpClient.Builder().addInterceptor(logger).build()
         moshi = Moshi.Builder().add(KotlinJsonAdapterFactory())
             .build()
@@ -46,17 +45,21 @@ class Network  {
 
     suspend fun registerUser(
         user: User,
-        onSuccess: () -> Unit={},
-        onError: (String) -> Unit={}
+        onSuccess: (User) -> Unit = {},
+        onError: (String) -> Unit = {}
     ) {
+
+        _networkCurrentState.postValue(NetworkState.LOADING)
+        var responseUser: User?
         try {
-            _networkCurrentState.value=NetworkState.LOADING
-            val playList = lasrkyNudgeService.registerUser(user)
-            onSuccess()
-            _networkCurrentState.value=NetworkState.SUCCESS
+            responseUser = lasrkyNudgeService.registerUser(user)
+            onSuccess(responseUser)
+            _networkCurrentState.postValue(NetworkState.SUCCESS)
+
         } catch (e: Throwable) {
             onError(e.message.toString())
-            _networkCurrentState.value=NetworkState.ERROR
+            _networkCurrentState.postValue( NetworkState.ERROR)
+
         }
     }
 
@@ -65,12 +68,12 @@ class Network  {
         onError: (String) -> Unit
     ) {
 
-        _networkCurrentState.value=NetworkState.LOADING
+        _networkCurrentState.value = NetworkState.LOADING
         Handler().postDelayed({
             onSuccess(LANDMARK_DATA)
-            _networkCurrentState.value=NetworkState.SUCCESS
+            _networkCurrentState.value = NetworkState.SUCCESS
 
-        },5000)
+        }, 5000)
 
     }
 
@@ -78,13 +81,13 @@ class Network  {
     companion object {
         @Volatile
         private var INSTANCE: Network? = null
-        private lateinit var _networkCurrentState:MutableLiveData<NetworkState>
+        private lateinit var _networkCurrentState: MutableLiveData<NetworkState>
         val networkCurrentState: LiveData<NetworkState> get() = _networkCurrentState
 
         fun getNetworkProvider(): Network {
 
             return INSTANCE ?: synchronized(this) {
-                _networkCurrentState=MutableLiveData<NetworkState>()
+                _networkCurrentState = MutableLiveData<NetworkState>()
                 Network()
             }
         }

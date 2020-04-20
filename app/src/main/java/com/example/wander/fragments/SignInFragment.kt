@@ -6,6 +6,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.databinding.DataBindingUtil
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import com.example.wander.MapsActivity
 import com.example.wander.R
@@ -34,9 +35,12 @@ class SignInFragment : Fragment() {
 
         mapsActivity = requireActivity() as MapsActivity
 
-        binding.goSignIn.setOnClickListener {
-            mapsActivity.navController.navigate(R.id.action_signInFragment_to_mapFragment)
-        }
+        binding.lifecycleOwner=this
+        binding.viewModel=viewModel
+
+
+        // mapsActivity.navController.navigate(R.id.action_signInFragment_to_mapFragment)
+
     }
 
 }
