@@ -38,7 +38,7 @@ internal object GeofencingConstants {
             LatLng(4.707489, -74.062161)
         ),
         LandmarkDataObject(
-            "promo_fence_4",
+            "promo_fence_5",
             "U.S. Bancorp",
             "Hey! This is a temporal coupon for your next buy in Walmart that is near by you",
             LatLng(4.711357, -74.064588)

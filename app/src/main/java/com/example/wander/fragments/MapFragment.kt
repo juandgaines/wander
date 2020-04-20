@@ -120,10 +120,10 @@ class MapFragment : Fragment(), OnMapReadyCallback {
             when (it) {
                 Network.NetworkState.SUCCESS,
                 Network.NetworkState.ERROR -> {
-                    binding.loadingView.visibility=GONE
+                    binding.loadingView.visibility = GONE
                 }
                 else -> {
-                    binding.loadingView.visibility= VISIBLE
+                    binding.loadingView.visibility = VISIBLE
                 }
             }
         })
