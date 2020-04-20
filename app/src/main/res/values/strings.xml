@@ -15,4 +15,13 @@
     <string name="content_text">Prueba</string>
     <string name="channel_name">geofences</string>
     <string name="notification_channel_description">Active fences</string>
+    <string name="sign_up">Sign Up</string>
+    <string name="sign_in">Sign In</string>
+    <string name="email">Email</string>
+    <string name="password">Password</string>
+    <string name="password_confirm">Confirm password</string>
+    <string name="user_name">User name</string>
+    <string name="first_name">First Name</string>
+    <string name="last_name">Last name</string>
+    <string name="register">Register</string>
 </resources>

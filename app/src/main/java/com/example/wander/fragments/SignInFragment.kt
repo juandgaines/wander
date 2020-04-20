@@ -9,36 +9,27 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import com.example.wander.MapsActivity
 import com.example.wander.R
-import com.example.wander.databinding.StartFragmentBinding
+import com.example.wander.databinding.SignInFragmentBinding
 
-class StartFragment : Fragment() {
+class SignInFragment : Fragment() {
 
 
-    private lateinit var viewModel: StartViewModel
-    private lateinit var binding: StartFragmentBinding
+    private lateinit var viewModel: SignInViewModel
+    private lateinit var binding: SignInFragmentBinding
     private lateinit var mapsActivity: MapsActivity
+
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
         binding =
-            DataBindingUtil.inflate(inflater, R.layout.start_fragment, container, false)
+            DataBindingUtil.inflate(inflater, R.layout.sign_in_fragment, container, false)
         return binding.root
     }
 
-
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
-        viewModel = ViewModelProvider(this).get(StartViewModel::class.java)
-
-        mapsActivity = requireActivity() as MapsActivity
-
-        binding.signUp.setOnClickListener {
-            mapsActivity.navController.navigate(R.id.action_startFragment_to_signUpFragment)
-        }
-        binding.signIn.setOnClickListener {
-            mapsActivity.navController.navigate(R.id.action_startFragment_to_signInFragment)
-        }
+        viewModel = ViewModelProvider(this).get(SignInViewModel::class.java)
     }
 
 }
