@@ -12,8 +12,6 @@ import com.example.wander.R
 import com.example.wander.databinding.StartFragmentBinding
 
 class StartFragment : Fragment() {
-
-
     private lateinit var viewModel: StartViewModel
     private lateinit var binding: StartFragmentBinding
     private lateinit var mapsActivity: MapsActivity

@@ -5,6 +5,10 @@
 
     <data>
 
+        <variable
+            name="viewModel"
+            type="com.example.wander.fragments.SignUpViewModel" />
+
     </data>
 
 
@@ -43,6 +47,7 @@
 
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/inlinedTextFieldUserName"
+                        android:onTextChanged="@{(text, start, before, count) ->viewModel.onTextChangedUserName(text)}"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content" />
 
@@ -63,7 +68,8 @@
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/inlinedTextFieldFirstName"
                         android:layout_width="match_parent"
-                        android:layout_height="wrap_content" />
+                        android:layout_height="wrap_content"
+                        android:onTextChanged="@{(text, start, before, count) ->viewModel.onTextChangedFirstName(text)}"/>
 
                 </com.google.android.material.textfield.TextInputLayout>
 
@@ -82,7 +88,8 @@
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/inlinedTextFieldLastName"
                         android:layout_width="match_parent"
-                        android:layout_height="wrap_content" />
+                        android:layout_height="wrap_content"
+                        android:onTextChanged="@{(text, start, before, count) ->viewModel.onTextChangedLastName(text)}"/>
 
                 </com.google.android.material.textfield.TextInputLayout>
 
@@ -102,7 +109,8 @@
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/inlinedTextFieldEmail"
                         android:layout_width="match_parent"
-                        android:layout_height="wrap_content" />
+                        android:layout_height="wrap_content"
+                        android:onTextChanged="@{(text, start, before, count) ->viewModel.onTextChangedEmail(text)}"/>
 
                 </com.google.android.material.textfield.TextInputLayout>
 
@@ -123,7 +131,8 @@
                         android:id="@+id/inlinedTextFieldPassword"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:inputType="textPassword" />
+                        android:inputType="textPassword"
+                        android:onTextChanged="@{(text, start, before, count) ->viewModel.onTextChangedPw(text)}"/>
 
                 </com.google.android.material.textfield.TextInputLayout>
 
@@ -145,7 +154,8 @@
                         android:id="@+id/inlinedTextFieldPasswordConfirm"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:inputType="textPassword" />
+                        android:inputType="textPassword"
+                        android:onTextChanged="@{(text, start, before, count) ->viewModel.onTextChangedPwConfirm(text)}"/>
 
                 </com.google.android.material.textfield.TextInputLayout>
 
@@ -163,19 +173,11 @@
             android:layout_marginBottom="32dp"
             android:background="@drawable/button_style_one"
             android:text="@string/register"
+            android:enabled="@{viewModel.buttonEnabled}"
             android:textColor="@android:color/white"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent" />
-
-        <include
-            android:id="@+id/loadingView"
-            layout="@layout/loading_view"
-            android:visibility="gone"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 </layout>

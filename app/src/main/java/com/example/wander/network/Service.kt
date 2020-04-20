@@ -35,7 +35,7 @@ class Network  {
             .build()
 
         retrofit = Retrofit.Builder()
-            .baseUrl("https://ws.audioscrobbler.com/")
+            .baseUrl("http://3.16.11.253:3000/")
             .client(client)
             .addConverterFactory(MoshiConverterFactory.create(moshi))
             .build()

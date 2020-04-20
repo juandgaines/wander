@@ -6,6 +6,7 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.databinding.DataBindingUtil
 import androidx.lifecycle.ViewModelProvider
 import com.example.wander.MapsActivity
 
@@ -24,16 +25,19 @@ class SignUpFragment : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        return inflater.inflate(R.layout.sign_up_fragment, container, false)
+        binding = DataBindingUtil.inflate(inflater, R.layout.sign_up_fragment, container, false)
+        binding.lifecycleOwner=this
+        return binding.root
     }
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
         viewModel = ViewModelProvider(this).get(SignUpViewModel::class.java)
+        binding.viewModel=viewModel
         mapsActivity = requireActivity() as MapsActivity
 
         binding.goSignIn.setOnClickListener {
-            mapsActivity.navController.navigate(R.id.action_signUpFragment_to_mapFragment)
+            mapsActivity.navController.navigate(R.id.action_signUpFragment_to_signInFragment)
         }
 
     }

@@ -29,8 +29,8 @@
         android:label="sign_up_fragment"
         tools:layout="@layout/sign_up_fragment" >
         <action
-            android:id="@+id/action_signUpFragment_to_mapFragment"
-            app:destination="@id/mapFragment" />
+            android:id="@+id/action_signUpFragment_to_signInFragment"
+            app:destination="@id/signInFragment" />
     </fragment>
     <fragment
         android:id="@+id/signInFragment"
