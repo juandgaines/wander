@@ -2,12 +2,14 @@ package com.example.wander.fragments
 
 import android.Manifest
 import android.annotation.TargetApi
+import android.app.Activity.RESULT_OK
 import android.app.PendingIntent
 import android.content.Intent
 import android.content.IntentSender
 import android.content.pm.PackageManager
 import android.content.res.Resources
 import android.graphics.Color
+import android.location.Location
 import android.os.Bundle
 import android.util.Log
 import android.view.*
@@ -16,11 +18,20 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.databinding.DataBindingUtil
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.findNavController
 import androidx.navigation.ui.NavigationUI
 import com.example.wander.*
 import com.example.wander.R
+import com.example.wander.Utils.Companion.BACKGROUND_LOCATION_PERMISSION_INDEX
+import com.example.wander.Utils.Companion.LOCATION_PERMISSION_INDEX
+import com.example.wander.Utils.Companion.REQUEST_FOREGROUND_AND_BACKGROUND_PERMISSION_RESULT_CODE
+import com.example.wander.Utils.Companion.REQUEST_TURN_DEVICE_LOCATION_ON
+import com.example.wander.Utils.Companion.checkDeviceLocationSettingsAndStartGeofence
+import com.example.wander.Utils.Companion.foregroundAndBackgroundLocationPermissionApproved
+import com.example.wander.Utils.Companion.isPermissionGranted
+import com.example.wander.Utils.Companion.requestForegroundAndBackgroundLocationPermissions
 import com.example.wander.databinding.MapFragmentBinding
 import com.google.android.gms.common.api.ResolvableApiException
 import com.google.android.gms.location.*
@@ -41,6 +52,9 @@ class MapFragment : Fragment(), OnMapReadyCallback {
     private lateinit var overlay: TileOverlay
     private lateinit var clusterManager: ClusterManager<CustomCluster>
 
+    private lateinit var fusedLocationClient: FusedLocationProviderClient
+    private var currentLocation: LatLng? = null
+
 
     private val runningQOrLater =
         android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q
@@ -55,8 +69,7 @@ class MapFragment : Fragment(), OnMapReadyCallback {
     }
 
     lateinit var geofencingClient: GeofencingClient
-    lateinit var geofencingRequest: GeofencingRequest
-    lateinit var geofence: Geofence
+
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
@@ -71,12 +84,9 @@ class MapFragment : Fragment(), OnMapReadyCallback {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
         binding.map.onCreate(savedInstanceState)
         binding.map.onResume()
         binding.map.getMapAsync(this)
-
-
     }
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
@@ -87,6 +97,25 @@ class MapFragment : Fragment(), OnMapReadyCallback {
             geofencingClient = LocationServices.getGeofencingClient(it)
             createChannel(it.applicationContext)
         }
+
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireActivity())
+
+        viewModel.location.observe(viewLifecycleOwner, Observer {loc->
+            loc?.let {
+                currentLocation= LatLng(it.latitude,it.longitude)
+                focusMapOnCoordinates()
+            }
+        })
+
+        viewModel.geofenceRequest.observe(viewLifecycleOwner, Observer {geofencingRequest->
+            geofencingRequest?.let {gr->
+                geofencingClient.addGeofences(gr, geofencePendingIntent)?.run {
+                    addOnSuccessListener {
+                        Log.d("Add Geofence", gr.geofences.first().requestId)
+                    }
+                }
+            }
+        })
     }
 
     override fun onStart() {
@@ -95,192 +124,89 @@ class MapFragment : Fragment(), OnMapReadyCallback {
     }
 
     private fun checkPermissionsAndStartGeofencing() {
-        if (foregroundAndBackgroundLocationPermissionApproved()) {
-            checkDeviceLocationSettingsAndStartGeofence()
+        if (foregroundAndBackgroundLocationPermissionApproved(requireContext(),runningQOrLater)) {
+            checkDeviceLocationSettingsAndStartGeofence(true,this,onSuccess =  {
+                viewModel.addGeofence()
+            },onError = {
+                startIntentSenderForResult(
+                    it.resolution.intentSender,
+                    REQUEST_TURN_DEVICE_LOCATION_ON,
+                    null,
+                    0,
+                    0,
+                    0,
+                    null
+                )
+            })
         } else {
-            requestForegroundAndBackgroundLocationPermissions()
+            requestForegroundAndBackgroundLocationPermissions(requireContext(),runningQOrLater,this)
         }
     }
 
-    @TargetApi(29)
-    private fun foregroundAndBackgroundLocationPermissionApproved(): Boolean {
-        val foregroundLocationApproved = (
-                PackageManager.PERMISSION_GRANTED ==
-                        ActivityCompat.checkSelfPermission(
-                            activity?.applicationContext!!,
-                            Manifest.permission.ACCESS_FINE_LOCATION
-                        ))
-        val backgroundPermissionApproved =
-            if (runningQOrLater) {
-                PackageManager.PERMISSION_GRANTED ==
-                        ActivityCompat.checkSelfPermission(
-                            activity?.applicationContext!!,
-                            Manifest.permission.ACCESS_BACKGROUND_LOCATION
-                        )
-            } else {
-                true
-            }
-        return foregroundLocationApproved && backgroundPermissionApproved
-    }
-
-    private fun checkDeviceLocationSettingsAndStartGeofence(resolve: Boolean = true) {
-        val locationRequest = LocationRequest.create().apply {
-            priority = LocationRequest.PRIORITY_LOW_POWER
-        }
-        val builder = LocationSettingsRequest.Builder().addLocationRequest(locationRequest)
-
-        val settingsClient = LocationServices.getSettingsClient(requireActivity())
-        val locationSettingsResponseTask =
-            settingsClient.checkLocationSettings(builder.build())
-
-        locationSettingsResponseTask.addOnFailureListener { exception ->
-            if (exception is ResolvableApiException && resolve) {
-                // Location settings are not satisfied, but this can be fixed
-                // by showing the user a dialog.
-                try {
-                    // Show the dialog by calling startResolutionForResult(),
-                    // and check the result in onActivityResult().
-
-                    startIntentSenderForResult(exception.resolution.intentSender, REQUEST_TURN_DEVICE_LOCATION_ON, null, 0, 0, 0, null)
-                } catch (sendEx: IntentSender.SendIntentException) {
-                    Log.d(TAG, "Error getting location settings resolution: " + sendEx.message)
-                }
-            } else {
-                Log.d(TAG, "Fallamos a lo mal papu")
-            }
-        }.addOnCompleteListener {
-            if (it.isSuccessful) {
-                addGeofence()
-            }
-
-        }
-    }
-
-    private fun addGeofence() {
-        val currentGeofenceData = GeofencingConstants.LANDMARK_DATA[0]
-        geofence = Geofence.Builder()
-
-            .setRequestId(currentGeofenceData.id)
-            // Set the circular region of this geofence.
-            .setCircularRegion(
-                currentGeofenceData.latLong.latitude,
-                currentGeofenceData.latLong.longitude,
-                GeofencingConstants.GEOFENCE_RADIUS_IN_METERS
-            )
-            // Set the expiration duration of the geofence. This geofence gets
-            // automatically removed after this period of time.
-            .setExpirationDuration(GeofencingConstants.GEOFENCE_EXPIRATION_IN_MILLISECONDS)
-            // Set the transition types of interest. Alerts are only generated for these
-            // transition. We track entry and exit transitions in this sample.
-            .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER)
-            .build()
-
-        geofencingRequest = GeofencingRequest.Builder()
-            // The INITIAL_TRIGGER_ENTER flag indicates that geofencing service should trigger a
-            // GEOFENCE_TRANSITION_ENTER notification when the geofence is added and if the device
-            // is already inside that geofence.
-            .setInitialTrigger(GeofencingRequest.INITIAL_TRIGGER_ENTER)
-
-            // Add the geofences to be monitored by geofencing service.
-            .addGeofence(geofence)
-            .build()
-
-
-        geofencingClient.addGeofences(geofencingRequest, geofencePendingIntent)?.run {
-            addOnSuccessListener {
-                // Geofences added.
-                Log.d("Add Geofence", geofence.requestId)
-            }
-        }
-
-
-    }
-
-    /*
-*  Requests ACCESS_FINE_LOCATION and (on Android 10+ (Q) ACCESS_BACKGROUND_LOCATION.
-*/
-    @TargetApi(29)
-    private fun requestForegroundAndBackgroundLocationPermissions() {
-        if (foregroundAndBackgroundLocationPermissionApproved())
-            return
-
-        // Else request the permission
-        // this provides the result[LOCATION_PERMISSION_INDEX]
-        var permissionsArray = arrayOf(Manifest.permission.ACCESS_FINE_LOCATION)
-
-        val resultCode = when {
-            runningQOrLater -> {
-                // this provides the result[BACKGROUND_LOCATION_PERMISSION_INDEX]
-                permissionsArray += Manifest.permission.ACCESS_BACKGROUND_LOCATION
-                REQUEST_FOREGROUND_AND_BACKGROUND_PERMISSION_RESULT_CODE
-            }
-            else -> REQUEST_FOREGROUND_ONLY_PERMISSIONS_REQUEST_CODE
-        }
-
-        Log.d(TAG, "Request foreground only location permission")
-        requestPermissions(
-            permissionsArray,
-            resultCode
-        )
-    }
 
     override fun onMapReady(googleMap: GoogleMap) {
         map = googleMap
         map.mapType = GoogleMap.MAP_TYPE_NORMAL
         setUpCluster()
         setMapStyle(map)
-        val lat = 4.710216
-        val long = -74.062312
-        val homeLatLng = LatLng(lat, long)
-        val zoomLevel = 18f
-        map.moveCamera(CameraUpdateFactory.newLatLngZoom(homeLatLng, zoomLevel))
+        enableMyLocation()
+    }
 
+    private fun focusMapOnCoordinates() {
+        val zoomLevel = 18f
+        map.moveCamera(CameraUpdateFactory.newLatLngZoom(currentLocation, zoomLevel))
+        map.isMyLocationEnabled = true
     }
 
     fun enableMyLocation() {
-        if (isPermissionGranted()) {
-            val lat = 4.710216
-            val long = -74.062312
-            val homeLatLng = LatLng(lat, long)
-            val zoomLevel = 18f
-            map.moveCamera(CameraUpdateFactory.newLatLngZoom(homeLatLng, zoomLevel))
-            map.isMyLocationEnabled = true
-        } else {
-            requestPermissions(
-                arrayOf<String>(Manifest.permission.ACCESS_FINE_LOCATION),
-                REQUEST_FOREGROUND_ONLY_PERMISSIONS_REQUEST_CODE
-            )
+        if (isPermissionGranted(requireContext())) {
+            fusedLocationClient.lastLocation
+                .addOnSuccessListener { location: Location? ->
+                    // Got last known location. In some rare situations this can be null.
+                    viewModel.setCoordinates(location)
+                }
         }
     }
 
-    private fun isPermissionGranted(): Boolean {
-        return ContextCompat.checkSelfPermission(
-            requireContext(),
-            Manifest.permission.ACCESS_FINE_LOCATION
-        ) === PackageManager.PERMISSION_GRANTED
-    }
 
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<String>,
-        grantResults: IntArray
-    ) {
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
         Log.d(TAG, "onRequestPermissionResult")
 
-        if (
-            grantResults.isEmpty() ||
-            grantResults[LOCATION_PERMISSION_INDEX] == PackageManager.PERMISSION_DENIED ||
-            (requestCode == REQUEST_FOREGROUND_AND_BACKGROUND_PERMISSION_RESULT_CODE &&
-                    grantResults[BACKGROUND_LOCATION_PERMISSION_INDEX] ==
-                    PackageManager.PERMISSION_DENIED)
-        ) {
+        if (grantResults.isEmpty() || grantResults[LOCATION_PERMISSION_INDEX] == PackageManager.PERMISSION_DENIED || (requestCode == REQUEST_FOREGROUND_AND_BACKGROUND_PERMISSION_RESULT_CODE && grantResults[BACKGROUND_LOCATION_PERMISSION_INDEX] == PackageManager.PERMISSION_DENIED)) {
             // Permission denied.
             Log.d(TAG, "Permission denied")
+            activity?.findNavController(R.id.nav_controller)?.navigateUp()
 
         } else {
-            checkDeviceLocationSettingsAndStartGeofence()
-            enableMyLocation()
+            checkDeviceLocationSettingsAndStartGeofence(true,this,onSuccess =  {
+                viewModel.addGeofence()
+            },onError = {
+                startIntentSenderForResult(
+                    it.resolution.intentSender,
+                    REQUEST_TURN_DEVICE_LOCATION_ON,
+                    null,
+                    0,
+                    0,
+                    0,
+                    null
+                )
+            })
         }
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+
+        if(resultCode==RESULT_OK){
+            when(requestCode){
+                REQUEST_TURN_DEVICE_LOCATION_ON->{
+                    enableMyLocation()
+                }
+                else->Unit
+            }
+        }
+
+
     }
 
     private fun setMapStyle(map: GoogleMap) {
@@ -309,9 +235,6 @@ class MapFragment : Fragment(), OnMapReadyCallback {
     }
 
     private fun drawGeoFencesArea() {
-
-        val markerDrawable =
-            ContextCompat.getDrawable(requireContext(), R.drawable.icon_larky_nudge)
         GeofencingConstants.LANDMARK_DATA.forEach {
             val geoFenceLatLong = LatLng(it.latLong.latitude, it.latLong.longitude)
             val circleOptions = CircleOptions()
@@ -348,7 +271,7 @@ class MapFragment : Fragment(), OnMapReadyCallback {
             // Regardless of success/failure of the removal, add the new geofence
             addOnCompleteListener {
                 // Add the new geofence request with the new geofence
-                geofencingClient.addGeofences(geofencingRequest, geofencePendingIntent)?.run {
+                geofencingClient.addGeofences(viewModel.geofenceRequest.value, geofencePendingIntent)?.run {
                     addOnSuccessListener {
                         // Geofences added.
                         Toast.makeText(
@@ -356,7 +279,7 @@ class MapFragment : Fragment(), OnMapReadyCallback {
                             Toast.LENGTH_SHORT
                         )
                             .show()
-                        Log.e("Add Geofence", geofence.requestId)
+                        Log.e("Add Geofence", viewModel.geofenceRequest.value?.geofences?.first()?.requestId?:"")
                         // Tell the viewmodel that we've reached the end of the game and
                         // activated the last "geofence" --- by removing the Geofence.
                     }
@@ -404,11 +327,3 @@ class MapFragment : Fragment(), OnMapReadyCallback {
     }
 
 }
-
-
-private const val REQUEST_FOREGROUND_AND_BACKGROUND_PERMISSION_RESULT_CODE = 33
-private const val REQUEST_FOREGROUND_ONLY_PERMISSIONS_REQUEST_CODE = 34
-private const val REQUEST_TURN_DEVICE_LOCATION_ON = 29
-
-private const val LOCATION_PERMISSION_INDEX = 0
-private const val BACKGROUND_LOCATION_PERMISSION_INDEX = 1
