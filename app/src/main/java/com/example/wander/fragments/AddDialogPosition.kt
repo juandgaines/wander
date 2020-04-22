@@ -35,7 +35,8 @@ class AddDialogPosition private constructor (val position: LatLng, val onSuccess
         }
 
         binding.buttonYes.setOnClickListener {
-            onSuccess
+            onSuccess()
+            dismiss()
         }
         return binding.root
     }

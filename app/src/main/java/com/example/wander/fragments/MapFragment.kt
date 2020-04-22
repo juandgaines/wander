@@ -29,6 +29,7 @@ import com.example.wander.Utils.Companion.foregroundAndBackgroundLocationPermiss
 import com.example.wander.Utils.Companion.isPermissionGranted
 import com.example.wander.Utils.Companion.requestForegroundAndBackgroundLocationPermissions
 import com.example.wander.databinding.MapFragmentBinding
+import com.example.wander.network.LocationLinkerWithUser
 import com.example.wander.network.Network
 import com.example.wander.network.Result
 import com.example.wander.preferences.PreferencesManager
@@ -42,6 +43,7 @@ import com.google.android.gms.maps.model.*
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.maps.android.clustering.ClusterManager
 import com.google.maps.android.heatmaps.HeatmapTileProvider
+import java.math.RoundingMode
 import kotlin.concurrent.fixedRateTimer
 
 @Suppress("DEPRECATED_IDENTITY_EQUALS")
@@ -143,6 +145,23 @@ class MapFragment : Fragment(), OnMapReadyCallback {
             }
         })
 
+        viewModel.responseCreateLocation.observe( viewLifecycleOwner, Observer{result->
+            when (result) {
+                is Result.Success -> {
+                    val (id,identificator,bank,promo,latitude,longitude)=result.data!!
+                    val ngf=LandmarkDataObject(id,identificator,bank,promo,latitude = latitude.toDouble(),longitude = longitude.toDouble())
+                    addItems(ngf)
+                    viewModel.addGeofence(arrayOf(ngf))
+                    PreferencesManager.getPreferenceProvider(requireContext()).idUser=5
+                    val idUSer= PreferencesManager.getPreferenceProvider(requireContext()).idUser
+                    viewModel.relateLocationWithUser(LocationLinkerWithUser(id?:-1,idUSer))
+                }
+                is Result.Error -> {
+                    Toast.makeText(mapsActivity, result.exception, Toast.LENGTH_SHORT).show()
+                }
+            }
+        })
+
         viewModel.errorMessage.observe(viewLifecycleOwner, Observer {
             Toast.makeText(requireContext(), it, Toast.LENGTH_SHORT).show()
         })
@@ -179,9 +198,16 @@ class MapFragment : Fragment(), OnMapReadyCallback {
         enableMyLocation()
 
         map.setOnMapLongClickListener {
-            val dialog=AddDialogPosition.newInstance(it,{
-                viewModel.createLocation()
-            })
+            val dialog=AddDialogPosition.newInstance(it) {
+                viewModel.createLocation(LandmarkDataObject(
+                    identificator = "place",
+                    bank = "Scotiabank",
+                    promo= "30% discount",
+                    latitude = it.latitude.toBigDecimal().setScale(5, RoundingMode.HALF_EVEN).toDouble(),
+                    longitude = it.longitude.toBigDecimal().setScale(5, RoundingMode.HALF_EVEN).toDouble()
+
+                ))
+            }
             dialog.show(childFragmentManager,"dialog")
         }
     }
@@ -278,7 +304,7 @@ class MapFragment : Fragment(), OnMapReadyCallback {
 
     private fun drawGeoFencesArea() {
         GeofencingConstants.LANDMARK_DATA.forEach {
-            val geoFenceLatLong = LatLng(it.latLong.latitude, it.latLong.longitude)
+            val geoFenceLatLong = LatLng(it.latitude, it.longitude)
             val circleOptions = CircleOptions()
                 .center(
                     geoFenceLatLong
@@ -293,7 +319,7 @@ class MapFragment : Fragment(), OnMapReadyCallback {
 
         val provider = HeatmapTileProvider.Builder()
             .data(GeofencingConstants.LANDMARK_DATA.map {
-                it.latLong
+                LatLng(it.latitude,it.longitude)
             })
             .build()
         overlay = map.addTileOverlay(TileOverlayOptions().tileProvider(provider))
@@ -301,7 +327,7 @@ class MapFragment : Fragment(), OnMapReadyCallback {
     }
 
     private fun addItems(landmark: LandmarkDataObject) {
-        val item = CustomCluster(landmark.latLong.latitude, landmark.latLong.longitude)
+        val item = CustomCluster(landmark.latitude, landmark.longitude)
         clusterManager.addItem(item)
         //map.addMarker(MarkerOptions().position(item.position))
     }

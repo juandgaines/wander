@@ -5,6 +5,7 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import com.example.wander.GeofencingConstants.LANDMARK_DATA
 import com.example.wander.LandmarkDataObject
+import com.example.wander.LandmarkDataObjectResponse
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import okhttp3.OkHttpClient
@@ -102,13 +103,14 @@ class Network {
 
     suspend fun createLocation(
         token: String,
-        onSuccess: () -> Unit = {},
+        location: LandmarkDataObject,
+        onSuccess: (LandmarkDataObjectResponse?) -> Unit = {},
         onError: (String) -> Unit = {}
     ) {
         _networkCurrentState.postValue(NetworkState.LOADING)
         try {
-            lasrkyNudgeService.createLocation(token)
-            onSuccess()
+            val location =lasrkyNudgeService.createLocation(token, location)
+            onSuccess(location)
             _networkCurrentState.postValue(NetworkState.SUCCESS)
 
         } catch (e: Throwable) {
@@ -117,7 +119,23 @@ class Network {
         }
     }
 
+    suspend fun relateLocationWithUser(
+        token: String,
+        link: LocationLinkerWithUser,
+        onSuccess: () -> Unit = {},
+        onError: (String) -> Unit = {}
+    ) {
+        _networkCurrentState.postValue(NetworkState.LOADING)
+        try {
+            lasrkyNudgeService.relateLocationWithUser(token,link )
+            onSuccess()
+            _networkCurrentState.postValue(NetworkState.SUCCESS)
 
+        } catch (e: Throwable) {
+            onError(e.message.toString())
+            _networkCurrentState.postValue(NetworkState.ERROR)
+        }
+    }
 
 
     fun getPromotionsAround(

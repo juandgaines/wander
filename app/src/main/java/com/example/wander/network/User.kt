@@ -25,3 +25,6 @@ data class Token(
     val key: String?,
     val detail: String?
 )
+
+data class LocationLinkerWithUser(val location:Long,
+    val user:Long, val id:Long?=null)

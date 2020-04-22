@@ -14,6 +14,7 @@ import com.example.wander.R
 import com.example.wander.databinding.SignUpFragmentBinding
 import com.example.wander.network.Network
 import com.example.wander.network.Result
+import com.example.wander.preferences.PreferencesManager
 
 class SignUpFragment : Fragment() {
 
@@ -46,6 +47,7 @@ class SignUpFragment : Fragment() {
         viewModel.response.observe(viewLifecycleOwner, Observer { result ->
             when (result) {
                 is Result.Success -> {
+                    PreferencesManager.getPreferenceProvider(requireContext()).idUser=result.data?.id!!
                     mapsActivity.navController.navigate(R.id.action_signUpFragment_to_signInFragment)
                 }
                 is Result.Error -> {

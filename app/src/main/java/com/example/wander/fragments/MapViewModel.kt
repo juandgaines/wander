@@ -7,6 +7,8 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import com.example.wander.GeofencingConstants
 import com.example.wander.LandmarkDataObject
+import com.example.wander.LandmarkDataObjectResponse
+import com.example.wander.network.LocationLinkerWithUser
 import com.example.wander.network.Network
 import com.example.wander.preferences.PreferencesManager
 import com.google.android.gms.location.Geofence
@@ -28,14 +30,17 @@ class MapViewModel(application: Application) : AndroidViewModel(application) {
     private val _promoPlaces = MutableLiveData<LandmarkDataObject>()
     private val _errorMessage = MutableLiveData<String>()
     private val _responseLogOut = MutableLiveData<com.example.wander.network.Result<Void>>()
+    private val _responseCreateLocation = MutableLiveData<com.example.wander.network.Result<LandmarkDataObjectResponse>>()
 
 
     val location: LiveData<Location> get() = _location
     val geofenceRequest: LiveData<GeofencingRequest> get() = _geofenceRequest
-
     val networkState: LiveData<Network.NetworkState> get() = Network.networkCurrentState
     val responseLogOut: LiveData<com.example.wander.network.Result<Void>> get() = _responseLogOut
+    val responseCreateLocation: LiveData<com.example.wander.network.Result<LandmarkDataObjectResponse>> get() = _responseCreateLocation
     val errorMessage: LiveData<String> get() = _errorMessage
+
+
 
 
     fun setCoordinates(location: Location?) {
@@ -69,11 +74,11 @@ class MapViewModel(application: Application) : AndroidViewModel(application) {
 
             val geofence = Geofence.Builder()
 
-                .setRequestId(it.id)
+                .setRequestId(it.identificator)
                 // Set the circular region of this geofence.
                 .setCircularRegion(
-                    it.latLong.latitude,
-                    it.latLong.longitude,
+                    it.latitude,
+                    it.longitude,
                     GeofencingConstants.GEOFENCE_RADIUS_IN_METERS
                 )
                 // Set the expiration duration of the geofence. This geofence gets
@@ -104,16 +109,32 @@ class MapViewModel(application: Application) : AndroidViewModel(application) {
 
     }
 
-    fun createLocation() {
+    fun createLocation(location:LandmarkDataObject) {
 
         couroutineScope.launch {
             pro.createLocation(
-                "Token ${PreferencesManager.getPreferenceProvider(getApplication()).token ?: ""}",
+                token = "Token ${PreferencesManager.getPreferenceProvider(getApplication()).token ?: ""}",
+                location = location,
                 onSuccess = {
-                    _responseLogOut.postValue(com.example.wander.network.Result.Success(null))
+                    _responseCreateLocation.postValue(com.example.wander.network.Result.Success(it))
                 },
                 onError = {
-                    _responseLogOut.postValue(com.example.wander.network.Result.Error(it))
+                    _responseCreateLocation.postValue(com.example.wander.network.Result.Error(it))
+                })
+        }
+    }
+
+    fun relateLocationWithUser(linker:LocationLinkerWithUser) {
+
+        couroutineScope.launch {
+            pro.relateLocationWithUser(
+                token = "Token ${PreferencesManager.getPreferenceProvider(getApplication()).token ?: ""}",
+                link = linker,
+                onSuccess = {
+                    getPromotionsAround(LatLng(0.toDouble(),0.toDouble()))
+                },
+                onError = {
+                    _errorMessage.postValue("Error linking the user with location")
                 })
         }
     }
