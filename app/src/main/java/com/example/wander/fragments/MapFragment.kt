@@ -11,8 +11,6 @@ import android.os.Bundle
 import android.os.Handler
 import android.util.Log
 import android.view.*
-import android.view.View.GONE
-import android.view.View.VISIBLE
 import android.widget.Toast
 import androidx.databinding.DataBindingUtil
 import androidx.fragment.app.Fragment
@@ -118,14 +116,14 @@ class MapFragment : Fragment(), OnMapReadyCallback {
             }
         })
 
-        viewModel.responseLogOut.observe(viewLifecycleOwner, Observer {result->
-            when(result){
+        viewModel.responseLogOut.observe(viewLifecycleOwner, Observer { result ->
+            when (result) {
                 is Result.Success -> {
-                    PreferencesManager.getPreferenceProvider(requireContext()).token=""
+                    PreferencesManager.getPreferenceProvider(requireContext()).token = ""
                     mapsActivity.navController.navigateUp()
                 }
                 is Result.Error -> {
-                    Toast.makeText(mapsActivity,result.exception, Toast.LENGTH_SHORT).show()
+                    Toast.makeText(mapsActivity, result.exception, Toast.LENGTH_SHORT).show()
                 }
             }
 

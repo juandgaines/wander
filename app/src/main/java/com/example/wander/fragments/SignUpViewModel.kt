@@ -31,7 +31,7 @@ class SignUpViewModel : ViewModel() {
 
     val networkState: LiveData<Network.NetworkState> get() = Network.networkCurrentState
     val errorMessage: LiveData<String> get() = _errorMessage
-    val response:LiveData<Result<User>> get() = _response
+    val response: LiveData<Result<User>> get() = _response
 
 
     init {
@@ -157,17 +157,17 @@ class SignUpViewModel : ViewModel() {
         )
 
         couroutineScope.launch {
-            network.registerUser(user,onSuccess = {
+            network.registerUser(user, onSuccess = {
                 _response.postValue(Result.Success(it))
-            },onError = {
+            }, onError = {
                 _response.postValue(Result.Error(it))
             })
         }
 
     }
 
-override fun onCleared() {
-    super.onCleared()
-    viewModelJob.cancel()
-}
+    override fun onCleared() {
+        super.onCleared()
+        viewModelJob.cancel()
+    }
 }

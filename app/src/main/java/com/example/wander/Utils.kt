@@ -7,7 +7,6 @@ import android.content.IntentSender
 import android.content.pm.PackageManager
 import android.util.Log
 import androidx.core.app.ActivityCompat
-import androidx.core.app.ActivityCompat.requestPermissions
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import com.google.android.gms.common.api.ResolvableApiException
@@ -34,7 +33,10 @@ class Utils {
         ) === PackageManager.PERMISSION_GRANTED
 
         @TargetApi(29)
-        fun foregroundAndBackgroundLocationPermissionApproved(context: Context,runningQOrLater:Boolean): Boolean {
+        fun foregroundAndBackgroundLocationPermissionApproved(
+            context: Context,
+            runningQOrLater: Boolean
+        ): Boolean {
             val foregroundLocationApproved = (
                     PackageManager.PERMISSION_GRANTED ==
                             ActivityCompat.checkSelfPermission(
@@ -58,8 +60,12 @@ class Utils {
 *  Requests ACCESS_FINE_LOCATION and (on Android 10+ (Q) ACCESS_BACKGROUND_LOCATION.
 */
         @TargetApi(29)
-        fun requestForegroundAndBackgroundLocationPermissions(context: Context,runningQOrLater: Boolean,fragment:Fragment) {
-            if (foregroundAndBackgroundLocationPermissionApproved(context,runningQOrLater))
+        fun requestForegroundAndBackgroundLocationPermissions(
+            context: Context,
+            runningQOrLater: Boolean,
+            fragment: Fragment
+        ) {
+            if (foregroundAndBackgroundLocationPermissionApproved(context, runningQOrLater))
                 return
 
             // Else request the permission
@@ -81,7 +87,12 @@ class Utils {
         }
 
 
-        fun checkDeviceLocationSettingsAndStartGeofence(resolve: Boolean = true,fragment: Fragment,onSuccess:()-> Unit, onError:(exception: ResolvableApiException)->Unit) {
+        fun checkDeviceLocationSettingsAndStartGeofence(
+            resolve: Boolean = true,
+            fragment: Fragment,
+            onSuccess: () -> Unit,
+            onError: (exception: ResolvableApiException) -> Unit
+        ) {
             val locationRequest = LocationRequest.create().apply {
                 priority = LocationRequest.PRIORITY_LOW_POWER
             }

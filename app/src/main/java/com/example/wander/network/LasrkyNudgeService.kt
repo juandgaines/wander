@@ -2,7 +2,6 @@ package com.example.wander.network
 
 
 import retrofit2.http.Body
-import retrofit2.http.GET
 import retrofit2.http.Header
 import retrofit2.http.POST
 
@@ -20,7 +19,8 @@ interface LasrkyNudgeService {
 
 
     @POST("rest-auth/logout/")
-    suspend fun logoutUser(@Header("Authorization")  contentRange:String
+    suspend fun logoutUser(
+        @Header("Authorization") contentRange: String
     ): Token?
 
 

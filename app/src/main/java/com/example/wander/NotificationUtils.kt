@@ -30,7 +30,8 @@ fun createChannel(context: Context) {
         notificationChannel.enableLights(true)
         notificationChannel.lightColor = Color.RED
         notificationChannel.enableVibration(true)
-        notificationChannel.description = context.getString(R.string.notification_channel_description)
+        notificationChannel.description =
+            context.getString(R.string.notification_channel_description)
 
         val notificationManager = context.getSystemService(NotificationManager::class.java)
         notificationManager.createNotificationChannel(notificationChannel)

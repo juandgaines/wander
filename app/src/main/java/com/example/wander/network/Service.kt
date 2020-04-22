@@ -5,7 +5,6 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import com.example.wander.GeofencingConstants.LANDMARK_DATA
 import com.example.wander.LandmarkDataObject
-import com.example.wander.preferences.PreferencesManager
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import okhttp3.OkHttpClient
@@ -59,7 +58,7 @@ class Network {
 
         } catch (e: Throwable) {
             onError(e.message.toString())
-            _networkCurrentState.postValue( NetworkState.ERROR)
+            _networkCurrentState.postValue(NetworkState.ERROR)
 
         }
     }
@@ -80,12 +79,12 @@ class Network {
 
         } catch (e: Throwable) {
             onError(e.message.toString())
-            _networkCurrentState.postValue( NetworkState.ERROR)
+            _networkCurrentState.postValue(NetworkState.ERROR)
         }
     }
 
     suspend fun logoutUser(
-        token:String,
+        token: String,
         onSuccess: () -> Unit = {},
         onError: (String) -> Unit = {}
     ) {
@@ -97,10 +96,9 @@ class Network {
 
         } catch (e: Throwable) {
             onError(e.message.toString())
-            _networkCurrentState.postValue( NetworkState.ERROR)
+            _networkCurrentState.postValue(NetworkState.ERROR)
         }
     }
-
 
 
     fun getPromotionsAround(

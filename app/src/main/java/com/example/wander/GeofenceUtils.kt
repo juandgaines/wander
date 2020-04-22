@@ -3,7 +3,12 @@ package com.example.wander
 import com.google.android.gms.maps.model.LatLng
 import java.util.concurrent.TimeUnit
 
-data class LandmarkDataObject(val id: String, val bank: String, val promo: String, val latLong: LatLng)
+data class LandmarkDataObject(
+    val id: String,
+    val bank: String,
+    val promo: String,
+    val latLong: LatLng
+)
 
 internal object GeofencingConstants {
 

@@ -1,12 +1,10 @@
 package com.example.wander.fragments
 
 import android.app.Application
-import android.content.Context
 import android.location.Location
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.ViewModel
 import com.example.wander.GeofencingConstants
 import com.example.wander.LandmarkDataObject
 import com.example.wander.network.Network
@@ -19,12 +17,12 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
-class MapViewModel(application:Application) : AndroidViewModel(application) {
+class MapViewModel(application: Application) : AndroidViewModel(application) {
 
     private var viewModelJob: Job = Job()
     private var couroutineScope = CoroutineScope(viewModelJob + Dispatchers.IO)
 
-    private var pro=Network.getNetworkProvider()
+    private var pro = Network.getNetworkProvider()
     private val _location = MutableLiveData<Location>()
     private val _geofenceRequest = MutableLiveData<GeofencingRequest>()
     private val _promoPlaces = MutableLiveData<LandmarkDataObject>()
@@ -35,9 +33,9 @@ class MapViewModel(application:Application) : AndroidViewModel(application) {
     val location: LiveData<Location> get() = _location
     val geofenceRequest: LiveData<GeofencingRequest> get() = _geofenceRequest
 
-    val networkState:LiveData<Network.NetworkState> get() =Network.networkCurrentState
-    val responseLogOut:LiveData<com.example.wander.network.Result<Void>> get() = _responseLogOut
-    val errorMessage:LiveData<String> get() = _errorMessage
+    val networkState: LiveData<Network.NetworkState> get() = Network.networkCurrentState
+    val responseLogOut: LiveData<com.example.wander.network.Result<Void>> get() = _responseLogOut
+    val errorMessage: LiveData<String> get() = _errorMessage
 
 
     fun setCoordinates(location: Location?) {
@@ -46,12 +44,12 @@ class MapViewModel(application:Application) : AndroidViewModel(application) {
         }
     }
 
-    fun getPromotionsAround(location: LatLng?){
+    fun getPromotionsAround(location: LatLng?) {
 
-       pro.getPromotionsAround({
+        pro.getPromotionsAround({
             addGeofence(it)
-        },{
-            _errorMessage.value=it
+        }, {
+            _errorMessage.value = it
         })
 
 
@@ -88,17 +86,20 @@ class MapViewModel(application:Application) : AndroidViewModel(application) {
             geofencingRequest.addGeofence(geofence)
 
         }
-        _geofenceRequest.value=geofencingRequest.build()
+        _geofenceRequest.value = geofencingRequest.build()
     }
 
     fun logout() {
 
         couroutineScope.launch {
-            pro.logoutUser("Token ${PreferencesManager.getPreferenceProvider(getApplication()).token?:""}" ,onSuccess = {
-                _responseLogOut.postValue(com.example.wander.network.Result.Success(null))
-            },onError = {
-                _responseLogOut.postValue(com.example.wander.network.Result.Error(it))
-            })
+            pro.logoutUser(
+                "Token ${PreferencesManager.getPreferenceProvider(getApplication()).token ?: ""}",
+                onSuccess = {
+                    _responseLogOut.postValue(com.example.wander.network.Result.Success(null))
+                },
+                onError = {
+                    _responseLogOut.postValue(com.example.wander.network.Result.Error(it))
+                })
         }
 
     }

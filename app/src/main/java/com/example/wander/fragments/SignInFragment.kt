@@ -38,17 +38,18 @@ class SignInFragment : Fragment() {
 
         mapsActivity = requireActivity() as MapsActivity
 
-        binding.lifecycleOwner=this
-        binding.viewModel=viewModel
+        binding.lifecycleOwner = this
+        binding.viewModel = viewModel
 
-        viewModel.response.observe(viewLifecycleOwner, Observer {result->
-            when(result){
+        viewModel.response.observe(viewLifecycleOwner, Observer { result ->
+            when (result) {
                 is Result.Success -> {
-                    PreferencesManager.getPreferenceProvider(requireContext()).token=result.data?.key
+                    PreferencesManager.getPreferenceProvider(requireContext()).token =
+                        result.data?.key
                     mapsActivity.navController.navigate(R.id.action_signInFragment_to_mapFragment)
                 }
                 is Result.Error -> {
-                    Toast.makeText(mapsActivity,result.exception, Toast.LENGTH_SHORT).show()
+                    Toast.makeText(mapsActivity, result.exception, Toast.LENGTH_SHORT).show()
                 }
             }
         })

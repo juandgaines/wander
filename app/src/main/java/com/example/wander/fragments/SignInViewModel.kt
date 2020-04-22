@@ -1,11 +1,13 @@
 package com.example.wander.fragments
 
-import android.util.Patterns
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MediatorLiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
-import com.example.wander.network.*
+import com.example.wander.network.Login
+import com.example.wander.network.Network
+import com.example.wander.network.Result
+import com.example.wander.network.Token
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -27,7 +29,7 @@ class SignInViewModel : ViewModel() {
     val response: LiveData<Result<Token>> get() = _response
     val buttonEnabled: LiveData<Boolean> get() = _buttonEnabled
 
-    init{
+    init {
         _email.value = ""
         _password.value = ""
 
@@ -64,7 +66,7 @@ class SignInViewModel : ViewModel() {
         val em = _email.value!!
         val p1 = _password.value!!
 
-        return  (em.isNotBlank() && em.isNotEmpty()) &&
+        return (em.isNotBlank() && em.isNotEmpty()) &&
                 (p1.isNotBlank() && p1.isNotEmpty())
 
     }
@@ -77,9 +79,9 @@ class SignInViewModel : ViewModel() {
         )
 
         couroutineScope.launch {
-            network.loginUser(user,onSuccess = {
+            network.loginUser(user, onSuccess = {
                 _response.postValue(Result.Success(it))
-            },onError = {
+            }, onError = {
                 _response.postValue(Result.Error(it))
             })
         }

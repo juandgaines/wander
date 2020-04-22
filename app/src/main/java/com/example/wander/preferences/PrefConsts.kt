@@ -1,5 +1,5 @@
 package com.example.wander.preferences
 
 object PrefConsts {
-    val TOKEN="preference_token"
+    const val TOKEN = "preference_token"
 }

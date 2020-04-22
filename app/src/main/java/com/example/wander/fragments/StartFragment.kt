@@ -39,7 +39,9 @@ class StartFragment : Fragment() {
             mapsActivity.navController.navigate(R.id.action_startFragment_to_signInFragment)
         }
 
-        if(PreferencesManager.getPreferenceProvider(requireContext()).token.isNullOrEmpty().not()){
+        if (PreferencesManager.getPreferenceProvider(requireContext()).token.isNullOrEmpty()
+                .not()
+        ) {
             mapsActivity.navController.navigate(R.id.action_startFragment_to_mapFragment)
         }
     }
