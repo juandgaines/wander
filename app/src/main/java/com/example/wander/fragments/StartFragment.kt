@@ -10,6 +10,7 @@ import androidx.lifecycle.ViewModelProvider
 import com.example.wander.MapsActivity
 import com.example.wander.R
 import com.example.wander.databinding.StartFragmentBinding
+import com.example.wander.preferences.PreferencesManager
 
 class StartFragment : Fragment() {
     private lateinit var viewModel: StartViewModel
@@ -36,6 +37,10 @@ class StartFragment : Fragment() {
         }
         binding.signIn.setOnClickListener {
             mapsActivity.navController.navigate(R.id.action_startFragment_to_signInFragment)
+        }
+
+        if(PreferencesManager.getPreferenceProvider(requireContext()).token.isNullOrEmpty().not()){
+            mapsActivity.navController.navigate(R.id.action_startFragment_to_mapFragment)
         }
     }
 

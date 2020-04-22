@@ -1,30 +1,42 @@
 package com.example.wander.fragments
 
+import android.app.Application
+import android.content.Context
 import android.location.Location
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.example.wander.GeofencingConstants
 import com.example.wander.LandmarkDataObject
 import com.example.wander.network.Network
+import com.example.wander.preferences.PreferencesManager
 import com.google.android.gms.location.Geofence
 import com.google.android.gms.location.GeofencingRequest
 import com.google.android.gms.maps.model.LatLng
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
 
-class MapViewModel : ViewModel() {
+class MapViewModel(application:Application) : AndroidViewModel(application) {
+
+    private var viewModelJob: Job = Job()
+    private var couroutineScope = CoroutineScope(viewModelJob + Dispatchers.IO)
 
     private var pro=Network.getNetworkProvider()
-
     private val _location = MutableLiveData<Location>()
     private val _geofenceRequest = MutableLiveData<GeofencingRequest>()
     private val _promoPlaces = MutableLiveData<LandmarkDataObject>()
     private val _errorMessage = MutableLiveData<String>()
+    private val _responseLogOut = MutableLiveData<com.example.wander.network.Result<Void>>()
+
 
     val location: LiveData<Location> get() = _location
     val geofenceRequest: LiveData<GeofencingRequest> get() = _geofenceRequest
 
     val networkState:LiveData<Network.NetworkState> get() =Network.networkCurrentState
-
+    val responseLogOut:LiveData<com.example.wander.network.Result<Void>> get() = _responseLogOut
     val errorMessage:LiveData<String> get() = _errorMessage
 
 
@@ -77,6 +89,18 @@ class MapViewModel : ViewModel() {
 
         }
         _geofenceRequest.value=geofencingRequest.build()
+    }
+
+    fun logout() {
+
+        couroutineScope.launch {
+            pro.logoutUser("Token ${PreferencesManager.getPreferenceProvider(getApplication()).token?:""}" ,onSuccess = {
+                _responseLogOut.postValue(com.example.wander.network.Result.Success(null))
+            },onError = {
+                _responseLogOut.postValue(com.example.wander.network.Result.Error(it))
+            })
+        }
+
     }
 
 }

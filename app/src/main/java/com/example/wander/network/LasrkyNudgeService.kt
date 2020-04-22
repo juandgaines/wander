@@ -1,10 +1,10 @@
 package com.example.wander.network
 
 
-import kotlinx.coroutines.Deferred
 import retrofit2.http.Body
+import retrofit2.http.GET
+import retrofit2.http.Header
 import retrofit2.http.POST
-import retrofit2.http.Query
 
 interface LasrkyNudgeService {
 
@@ -17,5 +17,11 @@ interface LasrkyNudgeService {
     suspend fun loginUser(
         @Body login: Login
     ): Token
+
+
+    @POST("rest-auth/logout/")
+    suspend fun logoutUser(@Header("Authorization")  contentRange:String
+    ): Token?
+
 
 }

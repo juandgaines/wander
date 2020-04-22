@@ -13,6 +13,7 @@ import com.example.wander.MapsActivity
 import com.example.wander.R
 import com.example.wander.databinding.SignInFragmentBinding
 import com.example.wander.network.Result
+import com.example.wander.preferences.PreferencesManager
 
 class SignInFragment : Fragment() {
 
@@ -43,6 +44,7 @@ class SignInFragment : Fragment() {
         viewModel.response.observe(viewLifecycleOwner, Observer {result->
             when(result){
                 is Result.Success -> {
+                    PreferencesManager.getPreferenceProvider(requireContext()).token=result.data?.key
                     mapsActivity.navController.navigate(R.id.action_signInFragment_to_mapFragment)
                 }
                 is Result.Error -> {

@@ -22,5 +22,6 @@ data class Login(
 )
 
 data class Token(
-    val key: String
+    val key: String?,
+    val detail:String?
 )

@@ -25,4 +25,5 @@
     <string name="last_name">Last name</string>
     <string name="register">Register</string>
     <string name="geofences_removed">Geofences removed</string>
+    <string name="log_out">Log out</string>
 </resources>

@@ -5,6 +5,7 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import com.example.wander.GeofencingConstants.LANDMARK_DATA
 import com.example.wander.LandmarkDataObject
+import com.example.wander.preferences.PreferencesManager
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import okhttp3.OkHttpClient
@@ -82,6 +83,25 @@ class Network {
             _networkCurrentState.postValue( NetworkState.ERROR)
         }
     }
+
+    suspend fun logoutUser(
+        token:String,
+        onSuccess: () -> Unit = {},
+        onError: (String) -> Unit = {}
+    ) {
+        _networkCurrentState.postValue(NetworkState.LOADING)
+        try {
+            lasrkyNudgeService.logoutUser(token)
+            onSuccess()
+            _networkCurrentState.postValue(NetworkState.SUCCESS)
+
+        } catch (e: Throwable) {
+            onError(e.message.toString())
+            _networkCurrentState.postValue( NetworkState.ERROR)
+        }
+    }
+
+
 
     fun getPromotionsAround(
         onSuccess: (Array<LandmarkDataObject>) -> Unit,

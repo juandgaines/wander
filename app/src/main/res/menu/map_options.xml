@@ -10,4 +10,9 @@
         android:id="@+id/clear_map"
         android:title="@string/clear"
         app:showAsAction="never" />
+
+    <item
+        android:id="@+id/log_out"
+        android:title="@string/log_out"
+        app:showAsAction="never" />
 </menu>

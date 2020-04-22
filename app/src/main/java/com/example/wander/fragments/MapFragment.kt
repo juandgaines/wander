@@ -31,6 +31,8 @@ import com.example.wander.Utils.Companion.isPermissionGranted
 import com.example.wander.Utils.Companion.requestForegroundAndBackgroundLocationPermissions
 import com.example.wander.databinding.MapFragmentBinding
 import com.example.wander.network.Network
+import com.example.wander.network.Result
+import com.example.wander.preferences.PreferencesManager
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.GeofencingClient
 import com.google.android.gms.location.LocationServices
@@ -116,6 +118,19 @@ class MapFragment : Fragment(), OnMapReadyCallback {
             }
         })
 
+        viewModel.responseLogOut.observe(viewLifecycleOwner, Observer {result->
+            when(result){
+                is Result.Success -> {
+                    PreferencesManager.getPreferenceProvider(requireContext()).token=""
+                    mapsActivity.navController.navigateUp()
+                }
+                is Result.Error -> {
+                    Toast.makeText(mapsActivity,result.exception, Toast.LENGTH_SHORT).show()
+                }
+            }
+
+        })
+
         viewModel.networkState.observe(viewLifecycleOwner, Observer {
             when (it) {
                 Network.NetworkState.SUCCESS,
@@ -127,6 +142,7 @@ class MapFragment : Fragment(), OnMapReadyCallback {
                 }
             }
         })
+
         viewModel.errorMessage.observe(viewLifecycleOwner, Observer {
             Toast.makeText(requireContext(), it, Toast.LENGTH_SHORT).show()
         })
@@ -307,6 +323,11 @@ class MapFragment : Fragment(), OnMapReadyCallback {
             }
             R.id.clear_map -> {
                 map.clear()
+                true
+            }
+
+            R.id.log_out -> {
+                viewModel.logout()
                 true
             }
             else -> NavigationUI.onNavDestinationSelected(
