@@ -100,6 +100,25 @@ class Network {
         }
     }
 
+    suspend fun createLocation(
+        token: String,
+        onSuccess: () -> Unit = {},
+        onError: (String) -> Unit = {}
+    ) {
+        _networkCurrentState.postValue(NetworkState.LOADING)
+        try {
+            lasrkyNudgeService.createLocation(token)
+            onSuccess()
+            _networkCurrentState.postValue(NetworkState.SUCCESS)
+
+        } catch (e: Throwable) {
+            onError(e.message.toString())
+            _networkCurrentState.postValue(NetworkState.ERROR)
+        }
+    }
+
+
+
 
     fun getPromotionsAround(
         onSuccess: (Array<LandmarkDataObject>) -> Unit,

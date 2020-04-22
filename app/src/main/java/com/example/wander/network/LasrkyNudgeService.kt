@@ -1,6 +1,7 @@
 package com.example.wander.network
 
 
+import com.example.wander.LandmarkDataObject
 import retrofit2.http.Body
 import retrofit2.http.Header
 import retrofit2.http.POST
@@ -23,5 +24,10 @@ interface LasrkyNudgeService {
         @Header("Authorization") contentRange: String
     ): Token?
 
+    @POST("user-locations/create/")
+
+    suspend fun createLocation(
+        @Header("Authorization") contentRange: String
+    ): Token?
 
 }

@@ -10,6 +10,13 @@ data class LandmarkDataObject(
     val latLong: LatLng
 )
 
+data class LocationForPromotion(
+    val id: String,
+    val bank: String,
+    val promo: String,
+    val latLong: LatLng
+)
+
 internal object GeofencingConstants {
 
     val GEOFENCE_EXPIRATION_IN_MILLISECONDS: Long = TimeUnit.HOURS.toMillis(1)

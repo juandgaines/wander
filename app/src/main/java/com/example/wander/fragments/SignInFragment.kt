@@ -12,6 +12,7 @@ import androidx.lifecycle.ViewModelProvider
 import com.example.wander.MapsActivity
 import com.example.wander.R
 import com.example.wander.databinding.SignInFragmentBinding
+import com.example.wander.network.Network
 import com.example.wander.network.Result
 import com.example.wander.preferences.PreferencesManager
 
@@ -50,6 +51,18 @@ class SignInFragment : Fragment() {
                 }
                 is Result.Error -> {
                     Toast.makeText(mapsActivity, result.exception, Toast.LENGTH_SHORT).show()
+                }
+            }
+        })
+
+        viewModel.networkState.observe(viewLifecycleOwner, Observer {
+            when (it) {
+                Network.NetworkState.SUCCESS,
+                Network.NetworkState.ERROR -> {
+                    mapsActivity.hideLoading()
+                }
+                else -> {
+                    mapsActivity.showLoading()
                 }
             }
         })

@@ -26,4 +26,7 @@
     <string name="register">Register</string>
     <string name="geofences_removed">Geofences removed</string>
     <string name="log_out">Log out</string>
+    <string name="add_location_title">Would you like to add this location for a promotion?</string>
+    <string name="add">Add</string>
+    <string name="cancel">Cancel</string>
 </resources>

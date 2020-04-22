@@ -26,6 +26,7 @@ class SignInViewModel : ViewModel() {
 
 
     val network = Network.getNetworkProvider()
+    val networkState: LiveData<Network.NetworkState> get() = Network.networkCurrentState
     val response: LiveData<Result<Token>> get() = _response
     val buttonEnabled: LiveData<Boolean> get() = _buttonEnabled
 

@@ -104,4 +104,18 @@ class MapViewModel(application: Application) : AndroidViewModel(application) {
 
     }
 
+    fun createLocation() {
+
+        couroutineScope.launch {
+            pro.createLocation(
+                "Token ${PreferencesManager.getPreferenceProvider(getApplication()).token ?: ""}",
+                onSuccess = {
+                    _responseLogOut.postValue(com.example.wander.network.Result.Success(null))
+                },
+                onError = {
+                    _responseLogOut.postValue(com.example.wander.network.Result.Error(it))
+                })
+        }
+    }
+
 }

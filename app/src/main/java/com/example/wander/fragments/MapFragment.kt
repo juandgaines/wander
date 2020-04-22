@@ -12,6 +12,7 @@ import android.os.Handler
 import android.util.Log
 import android.view.*
 import android.widget.Toast
+import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.databinding.DataBindingUtil
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Observer
@@ -38,8 +39,10 @@ import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.model.*
+import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.maps.android.clustering.ClusterManager
 import com.google.maps.android.heatmaps.HeatmapTileProvider
+import kotlin.concurrent.fixedRateTimer
 
 @Suppress("DEPRECATED_IDENTITY_EQUALS")
 class MapFragment : Fragment(), OnMapReadyCallback {
@@ -55,7 +58,6 @@ class MapFragment : Fragment(), OnMapReadyCallback {
     private var currentLocation: LatLng? = null
 
     private lateinit var mapsActivity: MapsActivity
-
 
     private val runningQOrLater =
         android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q
@@ -144,6 +146,11 @@ class MapFragment : Fragment(), OnMapReadyCallback {
         viewModel.errorMessage.observe(viewLifecycleOwner, Observer {
             Toast.makeText(requireContext(), it, Toast.LENGTH_SHORT).show()
         })
+
+
+
+
+
     }
 
     override fun onStart() {
@@ -170,6 +177,13 @@ class MapFragment : Fragment(), OnMapReadyCallback {
         setUpCluster()
         setMapStyle(map)
         enableMyLocation()
+
+        map.setOnMapLongClickListener {
+            val dialog=AddDialogPosition.newInstance(it,{
+                viewModel.createLocation()
+            })
+            dialog.show(childFragmentManager,"dialog")
+        }
     }
 
     private fun focusMapOnCoordinates() {
@@ -331,8 +345,7 @@ class MapFragment : Fragment(), OnMapReadyCallback {
             else -> NavigationUI.onNavDestinationSelected(
                 item!!,
                 requireActivity().findNavController(R.id.myNavHostFragment)
-            )
-                    || super.onOptionsItemSelected(item)
+            ) || super.onOptionsItemSelected(item)
         }
 
     companion object {
