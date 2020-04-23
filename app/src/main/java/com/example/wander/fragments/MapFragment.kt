@@ -74,7 +74,7 @@ class MapFragment : Fragment(), OnMapReadyCallback {
 
     lateinit var geofencingClient: GeofencingClient
 
-    private val promos=ArrayList<LandmarkDataObject>()
+    private val promos = ArrayList<LandmarkDataObject>()
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -146,15 +146,28 @@ class MapFragment : Fragment(), OnMapReadyCallback {
             }
         })
 
-        viewModel.responseCreateLocation.observe( viewLifecycleOwner, Observer{result->
+        viewModel.responseCreateLocation.observe(viewLifecycleOwner, Observer { result ->
             when (result) {
                 is Result.Success -> {
-                    val (id,identificator,bank,promo,latitude,longitude)=result.data!!
-                    val ngf=LandmarkDataObject(id,identificator,bank,promo,latitude = latitude.toDouble(),longitude = longitude.toDouble())
-                    addItems(ngf)
+                    val (id, identificator, bank, promo, latitude, longitude) = result.data!!
+                    val ngf = LandmarkDataObject(
+                        id,
+                        identificator,
+                        bank,
+                        promo,
+                        latitude = latitude.toDouble(),
+                        longitude = longitude.toDouble()
+                    )
                     viewModel.addGeofence(arrayOf(ngf).toList())
-                    val idUSer= PreferencesManager.getPreferenceProvider(requireContext()).idUser
-                    viewModel.relateLocationWithUser(LocationLinkerWithUser(id?:-1,idUSer))
+                    val idUSer = PreferencesManager.getPreferenceProvider(requireContext()).idUser
+                    viewModel.relateLocationWithUser(LocationLinkerWithUser(id ?: -1, idUSer))
+                    if (viewModel.revealGeofences.value!!) {
+                        promos.add(ngf)
+                        clusterManager.clearItems()
+                        drawGeoFencesArea()
+                    } else {
+                        map.clear()
+                    }
                 }
                 is Result.Error -> {
                     Toast.makeText(mapsActivity, result.exception, Toast.LENGTH_SHORT).show()
@@ -162,12 +175,19 @@ class MapFragment : Fragment(), OnMapReadyCallback {
             }
         })
 
-        viewModel.responsePromosNearBy.observe(viewLifecycleOwner, Observer {result->
+        viewModel.responsePromosNearBy.observe(viewLifecycleOwner, Observer { result ->
             when (result) {
                 is Result.Success -> {
-                    val loc=result.data?.map {
-                        val (id,identificator,bank,promo,latitude,longitude)=it.location
-                        LandmarkDataObject(id,identificator,bank,promo,latitude = latitude.toDouble(),longitude = longitude.toDouble())
+                    val loc = result.data?.map {
+                        val (id, identificator, bank, promo, latitude, longitude) = it.location
+                        LandmarkDataObject(
+                            id,
+                            identificator,
+                            bank,
+                            promo,
+                            latitude = latitude.toDouble(),
+                            longitude = longitude.toDouble()
+                        )
                     }
                     promos.addAll(ArrayList(loc!!))
                     viewModel.addGeofence(loc)
@@ -179,15 +199,15 @@ class MapFragment : Fragment(), OnMapReadyCallback {
 
         })
 
+        viewModel.revealGeofences.observe(viewLifecycleOwner, Observer {
+            if (it) {
+                drawGeoFencesArea()
+            }
+        })
+
         viewModel.errorMessage.observe(viewLifecycleOwner, Observer {
             Toast.makeText(requireContext(), it, Toast.LENGTH_SHORT).show()
         })
-
-
-
-
-
-
 
 
     }
@@ -218,17 +238,18 @@ class MapFragment : Fragment(), OnMapReadyCallback {
         enableMyLocation()
 
         map.setOnMapLongClickListener {
-            val dialog=AddDialogPosition.newInstance(it) {
-                viewModel.createLocation(LandmarkDataObject(
-                    identificator = "place",
-                    bank = "Scotiabank",
-                    promo= "30% discount",
-                    latitude = it.latitude.setDecimals(5),
-                    longitude = it.longitude.setDecimals(5)
-
-                ))
+            val dialog = AddDialogPosition.newInstance(it) {
+                viewModel.createLocation(
+                    LandmarkDataObject(
+                        identificator = "place",
+                        bank = "Scotiabank",
+                        promo = "30% discount",
+                        latitude = it.latitude.setDecimals(5),
+                        longitude = it.longitude.setDecimals(5)
+                    )
+                )
             }
-            dialog.show(childFragmentManager,"dialog")
+            dialog.show(childFragmentManager, "dialog")
         }
     }
 
@@ -324,7 +345,7 @@ class MapFragment : Fragment(), OnMapReadyCallback {
     }
 
     private fun drawGeoFencesArea() {
-        promos.forEach{
+        promos.forEach {
             val geoFenceLatLong = LatLng(it.latitude, it.longitude)
             val circleOptions = CircleOptions()
                 .center(
@@ -339,8 +360,8 @@ class MapFragment : Fragment(), OnMapReadyCallback {
         }
 
         val provider = HeatmapTileProvider.Builder()
-            .data(GeofencingConstants.LANDMARK_DATA.map {
-                LatLng(it.latitude,it.longitude)
+            .data(promos.map {
+                LatLng(it.latitude, it.longitude)
             })
             .build()
         overlay = map.addTileOverlay(TileOverlayOptions().tileProvider(provider))
@@ -377,11 +398,11 @@ class MapFragment : Fragment(), OnMapReadyCallback {
     override fun onOptionsItemSelected(item: MenuItem): Boolean =
         when (item.itemId) {
             R.id.draw_geofences -> {
-                drawGeoFencesArea()
+                viewModel.revealGeofences.value = true
                 true
             }
             R.id.clear_map -> {
-                map.clear()
+                viewModel.revealGeofences.value = false
                 true
             }
 

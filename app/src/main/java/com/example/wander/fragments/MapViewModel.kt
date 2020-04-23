@@ -38,6 +38,16 @@ class MapViewModel(application: Application) : AndroidViewModel(application) {
     private val _responsePromosNearBy =
         MutableLiveData<com.example.wander.network.Result<Array<UserWithLocation>>>()
 
+    val revealGeofences =
+        MutableLiveData<Boolean>()
+
+    init {
+
+        revealGeofences.value=false
+    }
+
+
+
 
     val location: LiveData<Location> get() = _location
     val geofenceRequest: LiveData<GeofencingRequest> get() = _geofenceRequest
@@ -65,7 +75,7 @@ class MapViewModel(application: Application) : AndroidViewModel(application) {
                 token = "Token ${PreferencesManager.getPreferenceProvider(getApplication()).token ?: ""}",
                 lat =  location.latitude.setDecimals(5),
                 long = location.longitude.setDecimals(5),
-                rad = 5,
+                rad = 1,
                 onSuccess = {
                     _responsePromosNearBy.postValue(Result.Success(it))
                 },
@@ -73,9 +83,7 @@ class MapViewModel(application: Application) : AndroidViewModel(application) {
                     _responsePromosNearBy.postValue(Result.Error(it))
                 })
         }
-
     }
-
 
     fun addGeofence(geofences: List<LandmarkDataObject>?) {
 
