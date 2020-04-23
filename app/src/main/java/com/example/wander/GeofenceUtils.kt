@@ -61,20 +61,20 @@ internal object GeofencingConstants {
         LandmarkDataObject(
             identificator = "promo_fence_3",
             bank = "Capital One",
-            promo = "Hey! This is a temporal coupon for your next buy in Walmart that is near by you",
+            promo = "Final Hours! Mystery flash sale on ZARA",
             latitude =  4.708163, longitude =  -74.059336
         ),
 
         LandmarkDataObject(
             identificator =  "promo_fence_4",
             bank = "U.S. Bancorp",
-            promo = "Hey! This is a temporal coupon for your next buy in Walmart that is near by you",
+            promo = "Limited time only! Save up to 40%",
             latitude= 4.707489,longitude =  -74.062161
         ),
         LandmarkDataObject(
             identificator = "promo_fence_5",
             bank = "U.S. Bancorp",
-            promo = "Hey! This is a temporal coupon for your next buy in Walmart that is near by you",
+            promo = "Extra 30% off & free shipping Use code SETSALE",
             latitude = 4.711357, longitude =  -74.064588
         )
     )

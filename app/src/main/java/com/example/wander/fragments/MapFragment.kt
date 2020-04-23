@@ -147,31 +147,33 @@ class MapFragment : Fragment(), OnMapReadyCallback {
         })
 
         viewModel.responseCreateLocation.observe(viewLifecycleOwner, Observer { result ->
-            when (result) {
-                is Result.Success -> {
-                    val (id, identificator, bank, promo, latitude, longitude) = result.data!!
-                    val ngf = LandmarkDataObject(
-                        id,
-                        identificator,
-                        bank,
-                        promo,
-                        latitude = latitude.toDouble(),
-                        longitude = longitude.toDouble()
-                    )
-                    viewModel.addGeofence(arrayOf(ngf).toList())
-                    val idUSer = PreferencesManager.getPreferenceProvider(requireContext()).idUser
-                    viewModel.relateLocationWithUser(LocationLinkerWithUser(id ?: -1, idUSer))
-                    if (viewModel.revealGeofences.value!!) {
+            if (viewModel.createdLocation.value!!.not()) {
+                when (result) {
+                    is Result.Success -> {
+                        val (id, identificator, bank, promo, latitude, longitude) = result.data!!
+                        val ngf = LandmarkDataObject(
+                            id,
+                            identificator,
+                            bank,
+                            promo,
+                            latitude = latitude.toDouble(),
+                            longitude = longitude.toDouble()
+                        )
+                        viewModel.addGeofence(arrayOf(ngf).toList())
+                        val idUSer =
+                            PreferencesManager.getPreferenceProvider(requireContext()).idUser
+                        viewModel.relateLocationWithUser(LocationLinkerWithUser(id ?: -1, idUSer))
                         promos.add(ngf)
-                        clusterManager.clearItems()
-                        drawGeoFencesArea()
-                    } else {
-                        map.clear()
+                        if (this::map.isInitialized && this::clusterManager.isInitialized) {
+                            map.clear()
+                            drawGeoFencesArea()
+                        }
+                    }
+                    is Result.Error -> {
+                        Toast.makeText(mapsActivity, result.exception, Toast.LENGTH_SHORT).show()
                     }
                 }
-                is Result.Error -> {
-                    Toast.makeText(mapsActivity, result.exception, Toast.LENGTH_SHORT).show()
-                }
+                viewModel.createdLocation.value = true
             }
         })
 
@@ -189,8 +191,14 @@ class MapFragment : Fragment(), OnMapReadyCallback {
                             longitude = longitude.toDouble()
                         )
                     }
+                    promos.clear()
                     promos.addAll(ArrayList(loc!!))
                     viewModel.addGeofence(loc)
+                    if (this::map.isInitialized && this::clusterManager.isInitialized) {
+                        map.clear()
+                        drawGeoFencesArea()
+                    }
+
                 }
                 is Result.Error -> {
                     Toast.makeText(mapsActivity, result.exception, Toast.LENGTH_SHORT).show()
@@ -201,6 +209,7 @@ class MapFragment : Fragment(), OnMapReadyCallback {
 
         viewModel.revealGeofences.observe(viewLifecycleOwner, Observer {
             if (it) {
+                map.clear()
                 drawGeoFencesArea()
             }
         })
@@ -236,7 +245,6 @@ class MapFragment : Fragment(), OnMapReadyCallback {
         setUpCluster()
         setMapStyle(map)
         enableMyLocation()
-
         map.setOnMapLongClickListener {
             val dialog = AddDialogPosition.newInstance(it) {
                 viewModel.createLocation(
@@ -248,9 +256,11 @@ class MapFragment : Fragment(), OnMapReadyCallback {
                         longitude = it.longitude.setDecimals(5)
                     )
                 )
+                viewModel.createdLocation.value = false
             }
             dialog.show(childFragmentManager, "dialog")
         }
+        viewModel.revealGeofences.value = true
     }
 
     private fun focusMapOnCoordinates() {
@@ -345,6 +355,8 @@ class MapFragment : Fragment(), OnMapReadyCallback {
     }
 
     private fun drawGeoFencesArea() {
+
+        clusterManager.clearItems()
         promos.forEach {
             val geoFenceLatLong = LatLng(it.latitude, it.longitude)
             val circleOptions = CircleOptions()
@@ -359,12 +371,15 @@ class MapFragment : Fragment(), OnMapReadyCallback {
             map.addCircle(circleOptions)
         }
 
-        val provider = HeatmapTileProvider.Builder()
-            .data(promos.map {
-                LatLng(it.latitude, it.longitude)
-            })
-            .build()
-        overlay = map.addTileOverlay(TileOverlayOptions().tileProvider(provider))
+        if (promos.isNotEmpty()) {
+            val provider = HeatmapTileProvider.Builder()
+                .data(promos.map {
+                    LatLng(it.latitude, it.longitude)
+                })
+                .build()
+            overlay = map.addTileOverlay(TileOverlayOptions().tileProvider(provider))
+        } else
+            Toast.makeText(requireContext(), "No GF available to show", Toast.LENGTH_SHORT).show()
 
     }
 
@@ -376,7 +391,9 @@ class MapFragment : Fragment(), OnMapReadyCallback {
 
     override fun onDestroy() {
         super.onDestroy()
-
+        viewModel.revealGeofences.value = false
+        clusterManager.clearItems()
+        promos.clear()
         geofencingClient.removeGeofences(geofencePendingIntent)?.run {
             // Regardless of success/failure of the removal, add the new geofence
             addOnCompleteListener {
@@ -397,14 +414,6 @@ class MapFragment : Fragment(), OnMapReadyCallback {
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean =
         when (item.itemId) {
-            R.id.draw_geofences -> {
-                viewModel.revealGeofences.value = true
-                true
-            }
-            R.id.clear_map -> {
-                viewModel.revealGeofences.value = false
-                true
-            }
 
             R.id.log_out -> {
                 viewModel.logout()

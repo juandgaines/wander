@@ -38,16 +38,15 @@ class MapViewModel(application: Application) : AndroidViewModel(application) {
     private val _responsePromosNearBy =
         MutableLiveData<com.example.wander.network.Result<Array<UserWithLocation>>>()
 
+    val createdLocation=MutableLiveData<Boolean>()
+
     val revealGeofences =
         MutableLiveData<Boolean>()
 
     init {
-
         revealGeofences.value=false
+        createdLocation.value=false
     }
-
-
-
 
     val location: LiveData<Location> get() = _location
     val geofenceRequest: LiveData<GeofencingRequest> get() = _geofenceRequest
@@ -87,35 +86,37 @@ class MapViewModel(application: Application) : AndroidViewModel(application) {
 
     fun addGeofence(geofences: List<LandmarkDataObject>?) {
 
-        val geofencingRequest = GeofencingRequest.Builder()
-            // The INITIAL_TRIGGER_ENTER flag indicates that geofencing service should trigger a
-            // GEOFENCE_TRANSITION_ENTER notification when the geofence is added and if the device
-            // is already inside that geofence.
-            .setInitialTrigger(GeofencingRequest.INITIAL_TRIGGER_ENTER)
+        if(geofences.isNullOrEmpty().not()) {
+            val geofencingRequest = GeofencingRequest.Builder()
+                // The INITIAL_TRIGGER_ENTER flag indicates that geofencing service should trigger a
+                // GEOFENCE_TRANSITION_ENTER notification when the geofence is added and if the device
+                // is already inside that geofence.
+                .setInitialTrigger(GeofencingRequest.INITIAL_TRIGGER_ENTER)
 
 
-        geofences?.forEach {
+            geofences?.forEach {
 
-            val geofence = Geofence.Builder()
+                val geofence = Geofence.Builder()
 
-                .setRequestId("${it.identificator}-${it.id}")
-                // Set the circular region of this geofence.
-                .setCircularRegion(
-                    it.latitude,
-                    it.longitude,
-                    GeofencingConstants.GEOFENCE_RADIUS_IN_METERS
-                )
-                // Set the expiration duration of the geofence. This geofence gets
-                // automatically removed after this period of time.
-                .setExpirationDuration(GeofencingConstants.GEOFENCE_EXPIRATION_IN_MILLISECONDS)
-                // Set the transition types of interest. Alerts are only generated for these
-                // transition. We track entry and exit transitions in this sample.
-                .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER)
-                .build()
-            geofencingRequest.addGeofence(geofence)
+                    .setRequestId("${it.identificator}-${it.id}")
+                    // Set the circular region of this geofence.
+                    .setCircularRegion(
+                        it.latitude,
+                        it.longitude,
+                        GeofencingConstants.GEOFENCE_RADIUS_IN_METERS
+                    )
+                    // Set the expiration duration of the geofence. This geofence gets
+                    // automatically removed after this period of time.
+                    .setExpirationDuration(GeofencingConstants.GEOFENCE_EXPIRATION_IN_MILLISECONDS)
+                    // Set the transition types of interest. Alerts are only generated for these
+                    // transition. We track entry and exit transitions in this sample.
+                    .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER)
+                    .build()
+                geofencingRequest.addGeofence(geofence)
 
+            }
+            _geofenceRequest.postValue(geofencingRequest.build())
         }
-        _geofenceRequest.postValue(geofencingRequest.build())
     }
 
     fun logout() {
@@ -163,4 +164,8 @@ class MapViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    override fun onCleared() {
+        super.onCleared()
+        viewModelJob.cancel()
+    }
 }

@@ -29,4 +29,10 @@
     <string name="add_location_title">Would you like to add this location for a promotion?</string>
     <string name="add">Add</string>
     <string name="cancel">Cancel</string>
+    <string name="email2">Email</string>
+    <string name="geofence_not_available">Geofence not available</string>
+    <string name="geofence_too_many_geofences">Too many geofences</string>
+    <string name="geofence_too_many_pending_intents">Too many pending intents</string>
+    <string name="unknown_geofence_error">Unknow geofenece error</string>
+    <string name="geofence_entered">Entered into geofence</string>
 </resources>

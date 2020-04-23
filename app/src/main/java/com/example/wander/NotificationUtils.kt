@@ -43,9 +43,13 @@ fun createChannel(context: Context) {
  * entered notification.  It sends a custom notification based on the name string associated
  * with the LANDMARK_DATA from GeofencingConstatns in the GeofenceUtils file.
  */
-fun NotificationManager.sendGeofenceEnteredNotification(context: Context, foundIndex: Int) {
+fun NotificationManager.sendGeofenceEnteredNotification(
+    context: Context,
+    bank:String,
+    promo: String
+) {
     val contentIntent = Intent(context, MapsActivity::class.java)
-    contentIntent.putExtra(GeofencingConstants.EXTRA_GEOFENCE_INDEX, foundIndex)
+    contentIntent.putExtra(GeofencingConstants.EXTRA_GEOFENCE_INDEX, 0)
     val contentPendingIntent = PendingIntent.getActivity(
         context,
         NOTIFICATION_ID,
@@ -63,8 +67,8 @@ fun NotificationManager.sendGeofenceEnteredNotification(context: Context, foundI
     // We use the name resource ID from the LANDMARK_DATA along with content_text to create
     // a custom message when a Geofence triggers.
     val builder = NotificationCompat.Builder(context, CHANNEL_ID)
-        .setContentTitle(context.getString(R.string.app_name))
-        .setContentText(context.getString(R.string.content_text))
+        .setContentTitle(bank)
+        .setContentText(promo)
         .setPriority(NotificationCompat.PRIORITY_HIGH)
         .setContentIntent(contentPendingIntent)
         .setSmallIcon(R.drawable.icon_larky_nudge)
