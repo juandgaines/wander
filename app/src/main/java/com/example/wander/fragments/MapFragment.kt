@@ -152,7 +152,6 @@ class MapFragment : Fragment(), OnMapReadyCallback {
                     val ngf=LandmarkDataObject(id,identificator,bank,promo,latitude = latitude.toDouble(),longitude = longitude.toDouble())
                     addItems(ngf)
                     viewModel.addGeofence(arrayOf(ngf))
-                    PreferencesManager.getPreferenceProvider(requireContext()).idUser=5
                     val idUSer= PreferencesManager.getPreferenceProvider(requireContext()).idUser
                     viewModel.relateLocationWithUser(LocationLinkerWithUser(id?:-1,idUSer))
                 }
