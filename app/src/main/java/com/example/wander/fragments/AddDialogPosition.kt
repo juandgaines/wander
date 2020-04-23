@@ -34,6 +34,8 @@ class AddDialogPosition private constructor (val position: LatLng, val onSuccess
             dismiss()
         }
 
+        binding.coordinatesInfo.text="latitude:${position.latitude}\nlongitude:${position.longitude}"
+
         binding.buttonYes.setOnClickListener {
             onSuccess()
             dismiss()

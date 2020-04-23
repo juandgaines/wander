@@ -12,7 +12,6 @@ import android.os.Handler
 import android.util.Log
 import android.view.*
 import android.widget.Toast
-import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.databinding.DataBindingUtil
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Observer
@@ -74,6 +73,8 @@ class MapFragment : Fragment(), OnMapReadyCallback {
     }
 
     lateinit var geofencingClient: GeofencingClient
+
+    private val promos=ArrayList<LandmarkDataObject>()
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -151,7 +152,7 @@ class MapFragment : Fragment(), OnMapReadyCallback {
                     val (id,identificator,bank,promo,latitude,longitude)=result.data!!
                     val ngf=LandmarkDataObject(id,identificator,bank,promo,latitude = latitude.toDouble(),longitude = longitude.toDouble())
                     addItems(ngf)
-                    viewModel.addGeofence(arrayOf(ngf))
+                    viewModel.addGeofence(arrayOf(ngf).toList())
                     val idUSer= PreferencesManager.getPreferenceProvider(requireContext()).idUser
                     viewModel.relateLocationWithUser(LocationLinkerWithUser(id?:-1,idUSer))
                 }
@@ -161,9 +162,29 @@ class MapFragment : Fragment(), OnMapReadyCallback {
             }
         })
 
+        viewModel.responsePromosNearBy.observe(viewLifecycleOwner, Observer {result->
+            when (result) {
+                is Result.Success -> {
+                    val loc=result.data?.map {
+                        val (id,identificator,bank,promo,latitude,longitude)=it.location
+                        LandmarkDataObject(id,identificator,bank,promo,latitude = latitude.toDouble(),longitude = longitude.toDouble())
+                    }
+                    promos.addAll(ArrayList(loc!!))
+                    viewModel.addGeofence(loc)
+                }
+                is Result.Error -> {
+                    Toast.makeText(mapsActivity, result.exception, Toast.LENGTH_SHORT).show()
+                }
+            }
+
+        })
+
         viewModel.errorMessage.observe(viewLifecycleOwner, Observer {
             Toast.makeText(requireContext(), it, Toast.LENGTH_SHORT).show()
         })
+
+
+
 
 
 
@@ -202,8 +223,8 @@ class MapFragment : Fragment(), OnMapReadyCallback {
                     identificator = "place",
                     bank = "Scotiabank",
                     promo= "30% discount",
-                    latitude = it.latitude.toBigDecimal().setScale(5, RoundingMode.HALF_EVEN).toDouble(),
-                    longitude = it.longitude.toBigDecimal().setScale(5, RoundingMode.HALF_EVEN).toDouble()
+                    latitude = it.latitude.setDecimals(5),
+                    longitude = it.longitude.setDecimals(5)
 
                 ))
             }
@@ -214,9 +235,10 @@ class MapFragment : Fragment(), OnMapReadyCallback {
     private fun focusMapOnCoordinates() {
         val zoomLevel = 18f
         Handler().postDelayed({
+            map.clear()
+            viewModel.getPromotionsAround(currentLocation!!)
             map.moveCamera(CameraUpdateFactory.newLatLngZoom(currentLocation, zoomLevel))
             map.isMyLocationEnabled = true
-            binding.map.onResume()
         }, 300)
     }
 
@@ -248,7 +270,7 @@ class MapFragment : Fragment(), OnMapReadyCallback {
 
     private fun checkLocationSolver() {
         checkDeviceLocationSettingsAndStartGeofence(true, this, onSuccess = {
-            viewModel.getPromotionsAround(currentLocation)
+
         }, onError = {
             startIntentSenderForResult(
                 it.resolution.intentSender,
@@ -302,7 +324,7 @@ class MapFragment : Fragment(), OnMapReadyCallback {
     }
 
     private fun drawGeoFencesArea() {
-        GeofencingConstants.LANDMARK_DATA.forEach {
+        promos.forEach{
             val geoFenceLatLong = LatLng(it.latitude, it.longitude)
             val circleOptions = CircleOptions()
                 .center(

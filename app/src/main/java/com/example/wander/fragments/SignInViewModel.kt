@@ -75,7 +75,7 @@ class SignInViewModel : ViewModel() {
     fun login() {
 
         val user = Login(
-            email = _email.value ?: "",
+            username = _email.value ?: "",
             password = _password.value ?: ""
         )
 

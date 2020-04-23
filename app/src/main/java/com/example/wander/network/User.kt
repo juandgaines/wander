@@ -1,5 +1,6 @@
 package com.example.wander.network
 
+import com.example.wander.LandmarkDataObjectResponse
 import com.squareup.moshi.Json
 
 data class User(
@@ -17,14 +18,21 @@ data class User(
 data class DataResponse(val code: Long)
 
 data class Login(
-    val email: String,
+    val username: String,
     val password: String
 )
 
 data class Token(
-    val key: String?,
+    val token: String?,
+    val user_id:Long?,
+    val email:String?,
     val detail: String?
 )
 
 data class LocationLinkerWithUser(val location:Long,
     val user:Long, val id:Long?=null)
+
+
+data class UserWithLocation(val id:Long?=null,
+val location: LandmarkDataObjectResponse,
+val user:User)

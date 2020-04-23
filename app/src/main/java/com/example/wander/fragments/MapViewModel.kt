@@ -10,7 +10,10 @@ import com.example.wander.LandmarkDataObject
 import com.example.wander.LandmarkDataObjectResponse
 import com.example.wander.network.LocationLinkerWithUser
 import com.example.wander.network.Network
+import com.example.wander.network.Result
+import com.example.wander.network.UserWithLocation
 import com.example.wander.preferences.PreferencesManager
+import com.example.wander.setDecimals
 import com.google.android.gms.location.Geofence
 import com.google.android.gms.location.GeofencingRequest
 import com.google.android.gms.maps.model.LatLng
@@ -30,7 +33,10 @@ class MapViewModel(application: Application) : AndroidViewModel(application) {
     private val _promoPlaces = MutableLiveData<LandmarkDataObject>()
     private val _errorMessage = MutableLiveData<String>()
     private val _responseLogOut = MutableLiveData<com.example.wander.network.Result<Void>>()
-    private val _responseCreateLocation = MutableLiveData<com.example.wander.network.Result<LandmarkDataObjectResponse>>()
+    private val _responseCreateLocation =
+        MutableLiveData<com.example.wander.network.Result<LandmarkDataObjectResponse>>()
+    private val _responsePromosNearBy =
+        MutableLiveData<com.example.wander.network.Result<Array<UserWithLocation>>>()
 
 
     val location: LiveData<Location> get() = _location
@@ -39,8 +45,7 @@ class MapViewModel(application: Application) : AndroidViewModel(application) {
     val responseLogOut: LiveData<com.example.wander.network.Result<Void>> get() = _responseLogOut
     val responseCreateLocation: LiveData<com.example.wander.network.Result<LandmarkDataObjectResponse>> get() = _responseCreateLocation
     val errorMessage: LiveData<String> get() = _errorMessage
-
-
+    val responsePromosNearBy: LiveData<com.example.wander.network.Result<Array<UserWithLocation>>> get() = _responsePromosNearBy
 
 
     fun setCoordinates(location: Location?) {
@@ -49,19 +54,30 @@ class MapViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun getPromotionsAround(location: LatLng?) {
+    fun getPromotionsAround(location: LatLng) {
 
-        pro.getPromotionsAround({
-            addGeofence(it)
-        }, {
-            _errorMessage.value = it
-        })
+        val token = PreferencesManager.getPreferenceProvider(getApplication()).token ?: ""
+        val userId = PreferencesManager.getPreferenceProvider(getApplication()).idUser
 
+
+        couroutineScope.launch {
+            pro.getPromotionsAround(
+                token = "Token ${PreferencesManager.getPreferenceProvider(getApplication()).token ?: ""}",
+                lat =  location.latitude.setDecimals(5),
+                long = location.longitude.setDecimals(5),
+                rad = 5,
+                onSuccess = {
+                    _responsePromosNearBy.postValue(Result.Success(it))
+                },
+                onError={
+                    _responsePromosNearBy.postValue(Result.Error(it))
+                })
+        }
 
     }
 
 
-    fun addGeofence(geofences: Array<LandmarkDataObject>) {
+    fun addGeofence(geofences: List<LandmarkDataObject>?) {
 
         val geofencingRequest = GeofencingRequest.Builder()
             // The INITIAL_TRIGGER_ENTER flag indicates that geofencing service should trigger a
@@ -70,11 +86,11 @@ class MapViewModel(application: Application) : AndroidViewModel(application) {
             .setInitialTrigger(GeofencingRequest.INITIAL_TRIGGER_ENTER)
 
 
-        geofences.forEach {
+        geofences?.forEach {
 
             val geofence = Geofence.Builder()
 
-                .setRequestId(it.identificator)
+                .setRequestId("${it.identificator}-${it.id}")
                 // Set the circular region of this geofence.
                 .setCircularRegion(
                     it.latitude,
@@ -91,7 +107,7 @@ class MapViewModel(application: Application) : AndroidViewModel(application) {
             geofencingRequest.addGeofence(geofence)
 
         }
-        _geofenceRequest.value = geofencingRequest.build()
+        _geofenceRequest.postValue(geofencingRequest.build())
     }
 
     fun logout() {
@@ -109,7 +125,7 @@ class MapViewModel(application: Application) : AndroidViewModel(application) {
 
     }
 
-    fun createLocation(location:LandmarkDataObject) {
+    fun createLocation(location: LandmarkDataObject) {
 
         couroutineScope.launch {
             pro.createLocation(
@@ -124,14 +140,14 @@ class MapViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun relateLocationWithUser(linker:LocationLinkerWithUser) {
+    fun relateLocationWithUser(linker: LocationLinkerWithUser) {
 
         couroutineScope.launch {
             pro.relateLocationWithUser(
                 token = "Token ${PreferencesManager.getPreferenceProvider(getApplication()).token ?: ""}",
                 link = linker,
                 onSuccess = {
-                    getPromotionsAround(LatLng(0.toDouble(),0.toDouble()))
+                    //getPromotionsAround(LatLng(0.toDouble(),0.toDouble()))
                 },
                 onError = {
                     _errorMessage.postValue("Error linking the user with location")

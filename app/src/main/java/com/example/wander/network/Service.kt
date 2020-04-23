@@ -138,6 +138,29 @@ class Network {
     }
 
 
+    suspend fun getPromotionsAround(
+        token: String,
+        lat: Double,
+        long: Double,
+        rad: Long,
+        onSuccess: (Array<UserWithLocation>) -> Unit = {},
+        onError: (String) -> Unit = {}
+    ) {
+
+
+        _networkCurrentState.postValue(NetworkState.LOADING)
+        try {
+            val list=lasrkyNudgeService.getPromotionsAround(token,lat,long,rad )
+            onSuccess(list!!)
+            _networkCurrentState.postValue(NetworkState.SUCCESS)
+
+        } catch (e: Throwable) {
+            onError(e.message.toString())
+            _networkCurrentState.postValue(NetworkState.ERROR)
+        }
+    }
+
+/*
     fun getPromotionsAround(
         onSuccess: (Array<LandmarkDataObject>) -> Unit,
         onError: (String) -> Unit
@@ -148,9 +171,9 @@ class Network {
             onSuccess(LANDMARK_DATA)
             _networkCurrentState.value = NetworkState.SUCCESS
 
-        }, 5000)
+        }, 3000)
 
-    }
+    }*/
 
 
     companion object {

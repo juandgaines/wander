@@ -3,9 +3,7 @@ package com.example.wander.network
 
 import com.example.wander.LandmarkDataObject
 import com.example.wander.LandmarkDataObjectResponse
-import retrofit2.http.Body
-import retrofit2.http.Header
-import retrofit2.http.POST
+import retrofit2.http.*
 
 interface LasrkyNudgeService {
 
@@ -14,7 +12,7 @@ interface LasrkyNudgeService {
         @Body user: User
     ): User
 
-    @POST("rest-auth/login/")
+    @POST("api-token-auth/login/")
     suspend fun loginUser(
         @Body login: Login
     ): Token
@@ -38,5 +36,16 @@ interface LasrkyNudgeService {
     suspend fun relateLocationWithUser(
         @Header("Authorization") contentRange: String, @Body link:LocationLinkerWithUser
     ): LocationLinkerWithUser?
+
+    @GET("user-locations/latitude/{latitude}/longitude/{longitude}/radius/{radius}/")
+    suspend fun getPromotionsAround(
+        @Header("Authorization") contentRange: String,
+        @Path("latitude")
+        lat: Double,
+        @Path("longitude")
+        long: Double,
+        @Path("radius")
+        rad: Long
+    ): Array<UserWithLocation>
 
 }

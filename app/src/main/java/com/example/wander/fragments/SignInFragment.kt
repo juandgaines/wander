@@ -46,7 +46,9 @@ class SignInFragment : Fragment() {
             when (result) {
                 is Result.Success -> {
                     PreferencesManager.getPreferenceProvider(requireContext()).token =
-                        result.data?.key
+                        result.data?.token
+                    PreferencesManager.getPreferenceProvider(requireContext()).idUser =
+                        result.data?.user_id?:-1
                     mapsActivity.navController.navigate(R.id.action_signInFragment_to_mapFragment)
                 }
                 is Result.Error -> {
