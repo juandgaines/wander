@@ -58,7 +58,7 @@ fun NotificationManager.sendGeofenceEnteredNotification(
     )
     val mapImage = BitmapFactory.decodeResource(
         context.resources,
-        R.drawable.icon_larky_nudge
+        R.drawable.ic_android_image_notification
     )
     val bigPicStyle = NotificationCompat.BigPictureStyle()
         .bigPicture(mapImage)
@@ -71,7 +71,7 @@ fun NotificationManager.sendGeofenceEnteredNotification(
         .setContentText(promo)
         .setPriority(NotificationCompat.PRIORITY_HIGH)
         .setContentIntent(contentPendingIntent)
-        .setSmallIcon(R.drawable.icon_larky_nudge)
+        .setSmallIcon(R.drawable.android)
         .setStyle(bigPicStyle)
         .setLargeIcon(mapImage)
 
